@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7
+    container_name: saasify-mongodb
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - saasify-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: saasify-redis
+    ports:
+      - '6379:6379'
+    networks:
+      - saasify-network
+
+  server:
+    build: ./server
+    container_name: saasify-server
+    ports:
+      - '5000:5000'
+    environment:
+      - NODE_ENV=production
+      - MONGODB_URI=mongodb://mongodb:27017/saasify
+      - JWT_SECRET=saasify-production-jwt-secret-change-me
+      - JWT_REFRESH_SECRET=saasify-production-refresh-secret-change-me
+      - CLIENT_URL=http://localhost:3000
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - mongodb
+      - redis
+    networks:
+      - saasify-network
+
+  client:
+    build: ./client
+    container_name: saasify-client
+    ports:
+      - '3000:80'
+    depends_on:
+      - server
+    networks:
+      - saasify-network
+
+volumes:
+  mongodb_data:
+
+networks:
+  saasify-network:
+    driver: bridge
