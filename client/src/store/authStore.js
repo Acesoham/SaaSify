@@ -77,4 +77,22 @@ export const useAuthStore = create((set, get) => ({
     localStorage.removeItem('saasify_current_tenant');
     set({ user: null, accessToken: null, tenants: [], currentTenant: null });
   },
+
+  acceptInvite: async (token) => {
+    set({ isLoading: true, error: null });
+    try {
+      await api.post(`/auth/accept-invite/${token}`);
+      
+      // Re-fetch current user and memberships after accepting
+      const { data } = await api.get('/tenants/my');
+      const tenants = data.data;
+      
+      localStorage.setItem('saasify_tenants', JSON.stringify(tenants));
+      set({ tenants, isLoading: false });
+      return true;
+    } catch (error) {
+      set({ error: error.response?.data?.message || 'Failed to accept invitation', isLoading: false });
+      return false;
+    }
+  },
 }));

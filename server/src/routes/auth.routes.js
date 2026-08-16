@@ -106,6 +106,21 @@ router.post('/invite', authenticate, tenantScope, rbac('admin'), validate(invite
 
 /**
  * @swagger
+ * /auth/invite/{token}:
+ *   get:
+ *     tags: [Auth]
+ *     summary: Get invitation details
+ *     parameters:
+ *       - in: path
+ *         name: token
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Invitation details
+ */
+/**
+ * @swagger
  * /auth/accept-invite/{token}:
  *   post:
  *     tags: [Auth]
@@ -119,6 +134,7 @@ router.post('/invite', authenticate, tenantScope, rbac('admin'), validate(invite
  *       200:
  *         description: Invite accepted
  */
+router.get('/invite/:token', authController.getInviteDetails);
 router.post('/accept-invite/:token', authController.acceptInvite);
 
 export default router;

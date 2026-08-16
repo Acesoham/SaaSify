@@ -7,6 +7,7 @@ import {
   HiOutlineClipboardList,
   HiOutlineChartBar,
   HiOutlineServer,
+  HiOutlineUserGroup,
   HiOutlineCog,
   HiOutlineChevronDown,
 } from 'react-icons/hi';
@@ -16,6 +17,7 @@ const navItems = [
   { to: '/projects', icon: HiOutlineFolder, label: 'Projects' },
   { to: '/tasks', icon: HiOutlineClipboardList, label: 'Tasks' },
   { to: '/analytics', icon: HiOutlineChartBar, label: 'Analytics' },
+  { to: '/team', icon: HiOutlineUserGroup, label: 'Team' },
   { to: '/devops', icon: HiOutlineServer, label: 'DevOps' },
   { to: '/settings', icon: HiOutlineCog, label: 'Settings' },
 ];

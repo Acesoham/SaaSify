@@ -42,6 +42,20 @@ export const initializeSocket = (io) => {
       socket.emit('notification:updated', data);
     });
 
+    // ─── Deployment log streaming ──────────────────────────────────────────
+    // Client joins this room to receive live build logs + status changes
+    socket.on('deployment:subscribe', (deploymentId) => {
+      const room = `deployment:${deploymentId}`;
+      socket.join(room);
+      logger.debug(`User ${socket.userId} subscribed to deployment: ${deploymentId}`);
+    });
+
+    socket.on('deployment:unsubscribe', (deploymentId) => {
+      const room = `deployment:${deploymentId}`;
+      socket.leave(room);
+      logger.debug(`User ${socket.userId} unsubscribed from deployment: ${deploymentId}`);
+    });
+
     socket.on('disconnect', () => {
       logger.info(`Socket disconnected: ${socket.userId}`);
     });

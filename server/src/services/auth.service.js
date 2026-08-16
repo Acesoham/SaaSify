@@ -135,4 +135,20 @@ export const authService = {
 
     return membership;
   },
+
+  async getInviteDetails(token) {
+    const membership = await Membership.findOne({ inviteToken: token, inviteStatus: 'pending' })
+      .populate('tenantId', 'name')
+      .populate('invitedBy', 'name');
+      
+    if (!membership) {
+      throw new AppError('Invalid or expired invite', 400);
+    }
+
+    return {
+      tenantName: membership.tenantId?.name || 'Unknown Team',
+      invitedBy: membership.invitedBy?.name || 'A team member',
+      role: membership.role
+    };
+  },
 };

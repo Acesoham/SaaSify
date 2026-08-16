@@ -97,6 +97,15 @@ export const authController = {
     }
   },
 
+  async getInviteDetails(req, res, next) {
+    try {
+      const details = await authService.getInviteDetails(req.params.token);
+      res.json({ success: true, data: details });
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async me(req, res, next) {
     try {
       res.json({ success: true, data: { user: req.user } });

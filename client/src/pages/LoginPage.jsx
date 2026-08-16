@@ -53,7 +53,7 @@ export default function LoginPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="sarah@acme.com"
+                
                 className="input-field"
                 required
               />
@@ -64,7 +64,7 @@ export default function LoginPage() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
+               
                 className="input-field"
                 required
               />
@@ -85,12 +85,6 @@ export default function LoginPage() {
             Don't have an account?{' '}
             <Link to="/signup" className="text-primary-400 hover:underline">Create one</Link>
           </p>
-
-          {/* Demo credentials */}
-          <div className="mt-6 p-3 rounded-xl bg-dark-800/40 border border-dark-600/20">
-            <p className="text-dark-400 text-xs text-center mb-1">Demo credentials</p>
-            <p className="text-dark-300 text-xs text-center font-mono">sarah@acme.com / password123</p>
-          </div>
         </div>
       </motion.div>
     </div>

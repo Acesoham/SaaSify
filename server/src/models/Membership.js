@@ -25,7 +25,7 @@ const membershipSchema = new mongoose.Schema(
     inviteStatus: {
       type: String,
       enum: ['pending', 'accepted', 'expired'],
-      default: 'accepted',
+      default: 'pending',
     },
     invitedBy: {
       type: mongoose.Schema.Types.ObjectId,

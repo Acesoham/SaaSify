@@ -45,10 +45,43 @@ export const useTaskStore = create((set) => ({
     await api.delete(`/tasks/${taskId}`);
     set((state) => ({ tasks: state.tasks.filter((t) => t._id !== taskId) }));
   },
+
+  moveTask: async (taskId, { fromStatus, toStatus, newOrder }) => {
+    // Optimistic update
+    set((state) => {
+      const sourceCol = [...state.kanban[fromStatus]];
+      const taskIndex = sourceCol.findIndex((t) => t._id === taskId);
+      if (taskIndex === -1) return state;
+
+      const [task] = sourceCol.splice(taskIndex, 1);
+      const updatedTask = { ...task, status: toStatus, order: newOrder };
+
+      const targetCol = fromStatus === toStatus ? sourceCol : [...state.kanban[toStatus]];
+      targetCol.splice(newOrder, 0, updatedTask);
+
+      return {
+        kanban: {
+          ...state.kanban,
+          [fromStatus]: sourceCol,
+          [toStatus]: targetCol,
+        },
+      };
+    });
+
+    try {
+      await api.put(`/tasks/${taskId}`, { status: toStatus, order: newOrder });
+    } catch (err) {
+      console.error('Failed to update task position:', err);
+      // Revert or refresh on error
+    }
+  },
+
+  setKanban: (kanban) => set({ kanban }),
 }));
 
 export const useProjectStore = create((set) => ({
   projects: [],
+  tenantMembers: [],
   isLoading: false,
   total: 0,
 
@@ -59,6 +92,15 @@ export const useProjectStore = create((set) => ({
       set({ projects: data.data.projects, total: data.data.total, isLoading: false });
     } catch {
       set({ isLoading: false });
+    }
+  },
+
+  fetchTenantMembers: async () => {
+    try {
+      const { data } = await api.get('/tenants/members');
+      set({ tenantMembers: data.data });
+    } catch (err) {
+      console.error('Failed to fetch tenant members:', err);
     }
   },
 

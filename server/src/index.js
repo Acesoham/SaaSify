@@ -19,6 +19,10 @@ import tenantRoutes from './routes/tenant.routes.js';
 import projectRoutes from './routes/project.routes.js';
 import taskRoutes from './routes/task.routes.js';
 import analyticsRoutes from './routes/analytics.routes.js';
+import githubRoutes from './routes/github.routes.js';
+import appRoutes from './routes/app.routes.js';
+import deploymentRoutes from './routes/deployment.routes.js';
+import webhookRoutes from './routes/webhook.routes.js';
 
 const app = express();
 const httpServer = createServer(app);
@@ -34,6 +38,8 @@ const io = new Server(httpServer, {
 
 initializeSocket(io);
 app.set('io', io);
+// Expose io globally so the deployment worker can emit events
+global.io = io;
 
 // Security middleware
 app.use(helmet());
@@ -74,6 +80,13 @@ app.use('/api/tenants', tenantRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/analytics', analyticsRoutes);
+
+// ─── PaaS Platform Routes ─────────────────────────────────────────────────────
+// Webhooks MUST be registered before any global body parsers
+app.use('/api/webhooks', webhookRoutes);
+app.use('/api/github', githubRoutes);
+app.use('/api/apps', appRoutes);
+app.use('/api/deployments', deploymentRoutes);
 
 // Error handling
 app.use(errorHandler);

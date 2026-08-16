@@ -50,19 +50,19 @@ export default function SignupPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="text-dark-300 text-sm block mb-1.5">Full Name</label>
-              <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Sarah Chen" className="input-field" required />
+              <input type="text" value={name} onChange={(e) => setName(e.target.value)}  className="input-field" required />
             </div>
             <div>
               <label className="text-dark-300 text-sm block mb-1.5">Email</label>
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="sarah@company.com" className="input-field" required />
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}  className="input-field" required />
             </div>
             <div>
               <label className="text-dark-300 text-sm block mb-1.5">Password</label>
-              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Min 6 characters" className="input-field" required />
+              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}   className="input-field" required />
             </div>
             <div>
               <label className="text-dark-300 text-sm block mb-1.5">Organization Name</label>
-              <input type="text" value={tenantName} onChange={(e) => setTenantName(e.target.value)} placeholder="Acme Corporation" className="input-field" required />
+              <input type="text" value={tenantName} onChange={(e) => setTenantName(e.target.value)} className="input-field" required />
             </div>
 
             <motion.button

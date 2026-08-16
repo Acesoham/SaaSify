@@ -1,6 +1,8 @@
 version: '3.8'
 
 services:
+
+  # ─── Infrastructure ──────────────────────────────────────────────────────────
   mongodb:
     image: mongo:7
     container_name: saasify-mongodb
@@ -10,15 +12,29 @@ services:
       - mongodb_data:/data/db
     networks:
       - saasify-network
+    healthcheck:
+      test: ['CMD', 'mongosh', '--eval', "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7-alpine
     container_name: saasify-redis
     ports:
       - '6379:6379'
+    command: redis-server --save 60 1 --loglevel warning
+    volumes:
+      - redis_data:/data
     networks:
       - saasify-network
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
+  # ─── API Server ───────────────────────────────────────────────────────────────
   server:
     build: ./server
     container_name: saasify-server
@@ -27,16 +43,86 @@ services:
     environment:
       - NODE_ENV=production
       - MONGODB_URI=mongodb://mongodb:27017/saasify
-      - JWT_SECRET=saasify-production-jwt-secret-change-me
-      - JWT_REFRESH_SECRET=saasify-production-refresh-secret-change-me
-      - CLIENT_URL=http://localhost:3000
       - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
+      - CLIENT_URL=${CLIENT_URL:-http://localhost:3000}
+      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID}
+      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET}
+      - GITHUB_WEBHOOK_SECRET=${GITHUB_WEBHOOK_SECRET}
+      - GITHUB_CALLBACK_URL=${GITHUB_CALLBACK_URL}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - BASE_DOMAIN=${BASE_DOMAIN:-localhost}
+      - PORT_RANGE_START=4000
+      - PORT_RANGE_END=5999
+      - NGINX_CONFIG_DIR=/etc/nginx/conf.d
+    volumes:
+      # Docker socket — required for running deployment containers
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Shared Nginx config dir — server writes configs, nginx reads them
+      - nginx_configs:/etc/nginx/conf.d
     depends_on:
-      - mongodb
-      - redis
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - saasify-network
+    restart: unless-stopped
 
+  # ─── Deployment Worker (separate process) ────────────────────────────────────
+  worker:
+    build: ./server
+    container_name: saasify-worker
+    command: node src/workers/index.js
+    environment:
+      - NODE_ENV=production
+      - MONGODB_URI=mongodb://mongodb:27017/saasify
+      - REDIS_URL=redis://redis:6379
+      - GITHUB_WEBHOOK_SECRET=${GITHUB_WEBHOOK_SECRET}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - BASE_DOMAIN=${BASE_DOMAIN:-localhost}
+      - DEPLOY_DIR=/tmp/saasify-deployments
+      - DOCKER_NETWORK=saasify-apps
+      - NGINX_CONFIG_DIR=/etc/nginx/conf.d
+      - PORT_RANGE_START=4000
+      - PORT_RANGE_END=5999
+    volumes:
+      # Worker needs Docker socket to build images and run containers
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Shared Nginx config dir — worker writes configs here
+      - nginx_configs:/etc/nginx/conf.d
+      # Temp build directory
+      - /tmp/saasify-deployments:/tmp/saasify-deployments
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - saasify-network
+    restart: unless-stopped
+
+  # ─── Nginx Reverse Proxy ─────────────────────────────────────────────────────
+  nginx:
+    image: nginx:alpine
+    container_name: saasify-nginx
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      # The client Nginx config (frontend serving)
+      - ./client/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      # Dynamic app configs — written by server/worker at deploy time
+      - nginx_configs:/etc/nginx/conf.d/apps
+    depends_on:
+      - server
+      - client
+    networks:
+      - saasify-network
+    restart: unless-stopped
+
+  # ─── Frontend ─────────────────────────────────────────────────────────────────
   client:
     build: ./client
     container_name: saasify-client
@@ -46,10 +132,19 @@ services:
       - server
     networks:
       - saasify-network
+    restart: unless-stopped
 
+# ─── Volumes ──────────────────────────────────────────────────────────────────
 volumes:
   mongodb_data:
+  redis_data:
+  nginx_configs:  # Shared between server, worker, and nginx
 
+# ─── Networks ─────────────────────────────────────────────────────────────────
 networks:
   saasify-network:
     driver: bridge
+  # Separate network for deployed user apps
+  saasify-apps:
+    driver: bridge
+    name: saasify-apps

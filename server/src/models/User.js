@@ -34,6 +34,25 @@ const userSchema = new mongoose.Schema(
       type: String,
       select: false,
     },
+
+    // ─── GitHub OAuth ──────────────────────────────────────────────────────
+    githubId: {
+      type: String,
+      default: null,
+    },
+    githubUsername: {
+      type: String,
+      default: null,
+    },
+    githubAccessToken: {
+      type: String,   // AES-256-GCM encrypted
+      select: false,
+      default: null,
+    },
+    githubConnected: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,
