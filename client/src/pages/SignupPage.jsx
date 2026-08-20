@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { FcGoogle } from 'react-icons/fc';
 import { useAuthStore } from '../store/authStore';
+import api from '../services/api';
 
 export default function SignupPage() {
   const [name, setName] = useState('');
@@ -15,6 +17,15 @@ export default function SignupPage() {
     e.preventDefault();
     const success = await register(name, email, password, tenantName);
     if (success) navigate('/dashboard');
+  };
+
+  const handleGoogleSignup = async () => {
+    try {
+      const { data } = await api.get('/auth/google/url');
+      window.location.href = data.data.url;
+    } catch (err) {
+      console.error('Failed to init Google OAuth', err);
+    }
   };
 
   return (
@@ -75,6 +86,25 @@ export default function SignupPage() {
               {isLoading ? 'Creating account...' : 'Create Account'}
             </motion.button>
           </form>
+
+          <div className="mt-6">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-dark-600/50"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-dark-950/80 text-dark-400">Or continue with</span>
+              </div>
+            </div>
+
+            <button
+              onClick={handleGoogleSignup}
+              className="mt-6 w-full flex items-center justify-center gap-2 bg-dark-800 hover:bg-dark-700 text-white font-medium py-3 rounded-xl border border-dark-600/50 transition-colors"
+            >
+              <FcGoogle className="text-xl" />
+              Google
+            </button>
+          </div>
 
           <p className="text-dark-400 text-sm text-center mt-6">
             Already have an account?{' '}

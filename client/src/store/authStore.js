@@ -95,4 +95,33 @@ export const useAuthStore = create((set, get) => ({
       return false;
     }
   },
+
+  fetchUser: async () => {
+    set({ isLoading: true });
+    try {
+      const [userRes, tenantsRes] = await Promise.all([
+        api.get('/auth/me'),
+        api.get('/tenants/my')
+      ]);
+      
+      const user = userRes.data.data.user;
+      const tenants = tenantsRes.data.data;
+      const firstTenant = tenants[0]?.tenant || null;
+
+      localStorage.setItem('saasify_user', JSON.stringify(user));
+      localStorage.setItem('saasify_tenants', JSON.stringify(tenants));
+      localStorage.setItem('saasify_current_tenant', JSON.stringify(firstTenant));
+
+      set({
+        user,
+        tenants,
+        currentTenant: firstTenant,
+        isLoading: false,
+      });
+      return true;
+    } catch (error) {
+      set({ error: 'Failed to fetch user', isLoading: false });
+      return false;
+    }
+  },
 }));

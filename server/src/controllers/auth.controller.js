@@ -1,4 +1,6 @@
 import { authService } from '../services/auth.service.js';
+import { googleService } from '../services/google.service.js';
+import config from '../config/env.js';
 
 export const authController = {
   async register(req, res, next) {
@@ -117,5 +119,39 @@ export const authController = {
   async logout(req, res) {
     res.clearCookie('refreshToken');
     res.json({ success: true, message: 'Logged out successfully' });
+  },
+
+  getGoogleAuthUrl(req, res) {
+    const url = googleService.getAuthUrl();
+    res.json({ success: true, data: { url } });
+  },
+
+  async handleGoogleCallback(req, res) {
+    try {
+      const { code, error } = req.query;
+
+      if (error) {
+        return res.redirect(`${config.clientUrl}/login?error=google_oauth_denied`);
+      }
+
+      if (!code) {
+        return res.redirect(`${config.clientUrl}/login?error=invalid_callback`);
+      }
+
+      // Exchange code for access token
+      const accessToken = await googleService.exchangeCodeForToken(code);
+
+      // Fetch user profile from Google
+      const profile = await googleService.getGoogleUser(accessToken);
+
+      // Login or register user
+      const result = await authService.googleLogin(profile);
+
+      // Redirect to frontend with tokens in URL
+      res.redirect(`${config.clientUrl}/oauth/callback?accessToken=${result.accessToken}&refreshToken=${result.refreshToken}`);
+    } catch (err) {
+      console.error('[Google OAuth] Callback error:', err);
+      res.redirect(`${config.clientUrl}/login?error=google_oauth_failed`);
+    }
   },
 };

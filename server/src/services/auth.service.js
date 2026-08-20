@@ -91,6 +91,57 @@ export const authService = {
     return { accessToken, refreshToken: newRefreshToken };
   },
 
+  async googleLogin(profile) {
+    let user = await User.findOne({ email: profile.email });
+
+    if (user) {
+      // Link Google account if not linked
+      if (!user.googleId) {
+        user.googleId = profile.id;
+        if (!user.avatar && profile.picture) {
+          user.avatar = profile.picture;
+        }
+        await user.save();
+      }
+    } else {
+      // Register new user via Google
+      user = await User.create({
+        name: profile.name || profile.email.split('@')[0],
+        email: profile.email,
+        googleId: profile.id,
+        avatar: profile.picture || '',
+        isVerified: profile.verified_email || false,
+      });
+
+      // Auto-create a tenant for them based on their name
+      const tenantName = `${user.name}'s Organization`;
+      const slug = tenantName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+
+      const tenant = await Tenant.create({
+        name: tenantName,
+        slug: `${slug}-${Date.now().toString(36)}`,
+        owner: user._id,
+      });
+
+      await Membership.create({
+        userId: user._id,
+        tenantId: tenant._id,
+        role: 'admin',
+        inviteStatus: 'accepted',
+      });
+    }
+
+    const memberships = await Membership.find({ userId: user._id, inviteStatus: 'accepted' }).populate('tenantId');
+
+    const accessToken = this.generateAccessToken(user._id);
+    const refreshToken = this.generateRefreshToken(user._id);
+
+    user.refreshToken = refreshToken;
+    await user.save();
+
+    return { user, memberships, accessToken, refreshToken };
+  },
+
   async inviteUser({ email, tenantId, role, invitedBy }) {
     let user = await User.findOne({ email });
     const inviteToken = this.generateInviteToken();

@@ -10,6 +10,7 @@ import {
   HiOutlineUserGroup,
   HiOutlineCog,
   HiOutlineChevronDown,
+  HiOutlineLogout,
 } from 'react-icons/hi';
 
 const navItems = [
@@ -79,7 +80,13 @@ export default function Sidebar() {
             <p className="text-white text-sm font-medium truncate">{user?.name || 'User'}</p>
             <p className="text-dark-400 text-xs truncate">{user?.email || ''}</p>
           </div>
-          <HiOutlineChevronDown className="text-dark-400 w-4 h-4 flex-shrink-0" />
+          <button 
+            onClick={logout}
+            title="Logout"
+            className="p-2 hover:bg-dark-700/50 rounded-lg transition-colors text-dark-400 hover:text-accent-red"
+          >
+            <HiOutlineLogout className="w-5 h-5" />
+          </button>
         </div>
       </div>
     </aside>

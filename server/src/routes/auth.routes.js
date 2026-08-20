@@ -68,6 +68,30 @@ router.post('/refresh', authController.refresh);
 
 /**
  * @swagger
+ * /auth/google/url:
+ *   get:
+ *     tags: [Auth]
+ *     summary: Get Google OAuth URL
+ *     responses:
+ *       200:
+ *         description: Google OAuth URL
+ */
+router.get('/google/url', authController.getGoogleAuthUrl);
+
+/**
+ * @swagger
+ * /auth/google/callback:
+ *   get:
+ *     tags: [Auth]
+ *     summary: Google OAuth Callback
+ *     responses:
+ *       302:
+ *         description: Redirects to frontend
+ */
+router.get('/google/callback', authController.handleGoogleCallback);
+
+/**
+ * @swagger
  * /auth/me:
  *   get:
  *     tags: [Auth]

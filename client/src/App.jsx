@@ -12,6 +12,7 @@ import DevOpsPage from './pages/DevOpsPage';
 import SettingsPage from './pages/SettingsPage';
 import TeamPage from './pages/TeamPage';
 import InvitePage from './pages/InvitePage';
+import OAuthCallbackPage from './pages/OAuthCallbackPage';
 
 function ProtectedRoute({ children }) {
   const { accessToken } = useAuthStore();
@@ -31,8 +32,9 @@ export default function App() {
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
-        <Route path="/signup" element={<PublicRoute><SignupPage /></PublicRoute>} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignupPage />} />
+        <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
         <Route path="/invite/:token" element={<InvitePage />} />
 
         {/* Protected Routes */}
