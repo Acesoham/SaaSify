@@ -40,13 +40,17 @@ export const githubService = {
    * Build the GitHub OAuth authorization URL.
    * Uses a CSRF state token scoped to the user's session.
    */
-  getAuthUrl(state) {
+  getAuthUrl(state, login) {
     const params = new URLSearchParams({
       client_id: config.github.clientId,
       redirect_uri: config.github.callbackUrl,
       scope: 'read:user user:email repo',
       state,
+      prompt: 'consent',
     });
+    if (login) {
+      params.append('login', login);
+    }
     return `https://github.com/login/oauth/authorize?${params.toString()}`;
   },
 
@@ -115,35 +119,49 @@ export const githubService = {
    * Paginates up to 100 results per page.
    */
   async listUserRepos(userId, page = 1, perPage = 30) {
-    const octokit = await getOctokitForUser(userId);
-    const { data } = await octokit.rest.repos.listForAuthenticatedUser({
-      sort: 'updated',
-      per_page: perPage,
-      page,
-      affiliation: 'owner,collaborator',
-    });
+    try {
+      const octokit = await getOctokitForUser(userId);
+      const { data } = await octokit.rest.repos.listForAuthenticatedUser({
+        sort: 'updated',
+        per_page: perPage,
+        page,
+        affiliation: 'owner,collaborator',
+      });
 
-    return data.map((repo) => ({
-      id: repo.id,
-      name: repo.name,
-      fullName: repo.full_name,
-      private: repo.private,
-      url: repo.clone_url,
-      sshUrl: repo.ssh_url,
-      defaultBranch: repo.default_branch,
-      description: repo.description,
-      language: repo.language,
-      updatedAt: repo.updated_at,
-    }));
+      return data.map((repo) => ({
+        id: repo.id,
+        name: repo.name,
+        fullName: repo.full_name,
+        private: repo.private,
+        url: repo.clone_url,
+        sshUrl: repo.ssh_url,
+        defaultBranch: repo.default_branch,
+        description: repo.description,
+        language: repo.language,
+        updatedAt: repo.updated_at,
+      }));
+    } catch (err) {
+      if (err.status === 401) {
+        throw new AppError('GitHub token is invalid or expired. Please reconnect your account.', 401);
+      }
+      throw err;
+    }
   },
 
   /**
    * List branches for a given repo.
    */
   async listRepoBranches(userId, owner, repo) {
-    const octokit = await getOctokitForUser(userId);
-    const { data } = await octokit.rest.repos.listBranches({ owner, repo, per_page: 100 });
-    return data.map((b) => b.name);
+    try {
+      const octokit = await getOctokitForUser(userId);
+      const { data } = await octokit.rest.repos.listBranches({ owner, repo, per_page: 100 });
+      return data.map((b) => b.name);
+    } catch (err) {
+      if (err.status === 401) {
+        throw new AppError('GitHub token is invalid or expired. Please reconnect your account.', 401);
+      }
+      throw err;
+    }
   },
 
   /**

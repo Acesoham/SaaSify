@@ -12,8 +12,9 @@ export const githubApi = {
    * 2. Server returns the full GitHub OAuth URL
    * 3. Frontend navigates the browser there
    */
-  initiateAuth: async () => {
-    const res = await api.get('/github/auth-url');
+  initiateAuth: async (login) => {
+    const params = login ? `?login=${encodeURIComponent(login)}` : '';
+    const res = await api.get(`/github/auth-url${params}`);
     window.location.href = res.data.data.url;
   },
 

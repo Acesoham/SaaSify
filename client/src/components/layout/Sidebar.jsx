@@ -12,6 +12,7 @@ import {
   HiOutlineChevronDown,
   HiOutlineLogout,
 } from 'react-icons/hi';
+import logo from '../../../assets/saasify-logo.png';
 
 const navItems = [
   { to: '/dashboard', icon: HiOutlineViewGrid, label: 'Dashboard' },
@@ -31,10 +32,7 @@ export default function Sidebar() {
     <aside className="fixed left-0 top-0 h-screen w-[240px] bg-dark-900/80 backdrop-blur-xl border-r border-dark-700/50 flex flex-col z-40">
       {/* Logo */}
       <div className="px-5 py-5 flex items-center gap-2.5">
-        <div className="w-8 h-8 bg-gradient-to-br from-primary-400 to-primary-600 rounded-lg flex items-center justify-center">
-          <span className="text-white font-bold text-sm">S</span>
-        </div>
-        <span className="text-white font-bold text-lg tracking-tight">SaaSify</span>
+        <img src={logo} alt="SaaSify Logo" className="h-8 w-auto object-contain" />
       </div>
 
       {/* Tenant Selector */}

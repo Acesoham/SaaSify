@@ -14,7 +14,8 @@ export const githubController = {
       JSON.stringify({ userId: req.userId.toString(), nonce: crypto.randomBytes(8).toString('hex') })
     ).toString('base64url');
 
-    const url = githubService.getAuthUrl(state);
+    const { login } = req.query;
+    const url = githubService.getAuthUrl(state, login);
     // Return as JSON — frontend navigates there via window.location.href
     res.json({ success: true, data: { url } });
   },
@@ -81,33 +82,45 @@ export const githubController = {
    * DELETE /api/github/disconnect
    * Removes GitHub connection from user account.
    */
-  async disconnect(req, res) {
-    await req.user.updateOne({
-      githubConnected: false,
-      githubAccessToken: null,
-      githubId: null,
-      githubUsername: null,
-    });
-    res.json({ success: true, message: 'GitHub account disconnected' });
+  async disconnect(req, res, next) {
+    try {
+      await req.user.updateOne({
+        githubConnected: false,
+        githubAccessToken: null,
+        githubId: null,
+        githubUsername: null,
+      });
+      res.json({ success: true, message: 'GitHub account disconnected' });
+    } catch (err) {
+      next(err);
+    }
   },
 
   /**
    * GET /api/github/repos
    * Lists repos accessible to the authenticated user.
    */
-  async listRepos(req, res) {
-    const { page = 1, per_page = 30 } = req.query;
-    const repos = await githubService.listUserRepos(req.userId, Number(page), Number(per_page));
-    res.json({ success: true, data: repos });
+  async listRepos(req, res, next) {
+    try {
+      const { page = 1, per_page = 30 } = req.query;
+      const repos = await githubService.listUserRepos(req.userId, Number(page), Number(per_page));
+      res.json({ success: true, data: repos });
+    } catch (err) {
+      next(err);
+    }
   },
 
   /**
    * GET /api/github/repos/:owner/:repo/branches
    * Lists branches for a specific repo.
    */
-  async listBranches(req, res) {
-    const { owner, repo } = req.params;
-    const branches = await githubService.listRepoBranches(req.userId, owner, repo);
-    res.json({ success: true, data: branches });
+  async listBranches(req, res, next) {
+    try {
+      const { owner, repo } = req.params;
+      const branches = await githubService.listRepoBranches(req.userId, owner, repo);
+      res.json({ success: true, data: branches });
+    } catch (err) {
+      next(err);
+    }
   },
 };

@@ -47,6 +47,48 @@ function StatusBadge({ status }) {
   );
 }
 
+function GithubLoginPrompt({ onClose, onSubmit }) {
+  const [login, setLogin] = useState('');
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        className="bg-dark-800 border border-dark-600/40 rounded-2xl w-full max-w-sm shadow-2xl p-5"
+      >
+        <h2 className="text-white font-semibold mb-2 flex items-center gap-2">
+          <SiGithub className="w-5 h-5 text-white" />
+          Connect GitHub
+        </h2>
+        <p className="text-slate-400 text-sm mb-4">
+          Enter the GitHub username you want to connect. We will ask GitHub to authorize this specific account.
+        </p>
+        <input
+          autoFocus
+          type="text"
+          placeholder="GitHub Username"
+          value={login}
+          onChange={(e) => setLogin(e.target.value)}
+          className="w-full bg-dark-700 border border-dark-500/50 rounded-lg px-3 py-2 text-white text-sm mb-4 outline-none focus:border-accent-purple/50"
+        />
+        <div className="flex justify-end gap-3">
+          <button onClick={onClose} className="px-4 py-2 text-slate-400 hover:text-white transition-colors text-sm">
+            Cancel
+          </button>
+          <button
+            disabled={!login.trim()}
+            onClick={() => onSubmit(login.trim())}
+            className="px-4 py-2 bg-accent-purple hover:bg-accent-purple/80 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
+          >
+            Continue
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
 function LogViewer({ deploymentId, initialLogs = [] }) {
   const [logs, setLogs] = useState(initialLogs);
   const bottomRef = useRef(null);
@@ -170,32 +212,49 @@ function ConnectRepoModal({ onClose, onConnect }) {
             <div className="max-h-64 overflow-y-auto space-y-1">
               {loading ? (
                 <p className="text-slate-400 text-sm text-center py-4">Loading repositories...</p>
-              ) : filtered.length === 0 ? (
-                <p className="text-slate-400 text-sm text-center py-4">No repositories found</p>
               ) : (
-                filtered.map((repo) => (
-                  <button
-                    key={repo.id}
-                    onClick={() => selectRepo(repo)}
-                    className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-dark-700 transition-colors text-left"
-                  >
-                    <HiOutlineCode className="w-4 h-4 text-slate-400 flex-shrink-0" />
-                    <div className="min-w-0">
-                      <p className="text-white text-sm font-medium truncate">{repo.fullName}</p>
-                      {repo.description && (
-                        <p className="text-slate-500 text-xs truncate">{repo.description}</p>
-                      )}
-                    </div>
-                    <div className="ml-auto flex items-center gap-2 flex-shrink-0">
-                      {repo.private && (
-                        <span className="text-xs bg-slate-700 text-slate-300 px-1.5 py-0.5 rounded">Private</span>
-                      )}
-                      {repo.language && (
-                        <span className="text-xs text-slate-400">{repo.language}</span>
-                      )}
-                    </div>
-                  </button>
-                ))
+                <>
+                  {filtered.length === 0 ? (
+                    <p className="text-slate-400 text-sm text-center py-4">No repositories found in your account.</p>
+                  ) : (
+                    filtered.map((repo) => (
+                      <button
+                        key={repo.id}
+                        onClick={() => selectRepo(repo)}
+                        className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-dark-700 transition-colors text-left"
+                      >
+                        <HiOutlineCode className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-white text-sm font-medium truncate">{repo.fullName}</p>
+                          {repo.description && (
+                            <p className="text-slate-500 text-xs truncate">{repo.description}</p>
+                          )}
+                        </div>
+                        <div className="ml-auto flex items-center gap-2 flex-shrink-0">
+                          {repo.private && (
+                            <span className="text-xs bg-slate-700 text-slate-300 px-1.5 py-0.5 rounded">Private</span>
+                          )}
+                          {repo.language && (
+                            <span className="text-xs text-slate-400">{repo.language}</span>
+                          )}
+                        </div>
+                      </button>
+                    ))
+                  )}
+
+                  {search.includes('/') && !filtered.find(r => r.fullName.toLowerCase() === search.toLowerCase()) && (
+                    <button
+                      onClick={() => selectRepo({ id: search, fullName: search, name: search.split('/')[1], defaultBranch: 'main' })}
+                      className="w-full flex items-center gap-3 p-3 mt-2 rounded-lg border border-dashed border-accent-purple/30 bg-accent-purple/5 hover:bg-accent-purple/10 transition-colors text-left"
+                    >
+                      <SiGithub className="w-4 h-4 text-accent-purple flex-shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-accent-purple text-sm font-medium truncate">Connect public repo: {search}</p>
+                        <p className="text-accent-purple/70 text-xs truncate">Deploy this repository manually</p>
+                      </div>
+                    </button>
+                  )}
+                </>
               )}
             </div>
           </div>
@@ -458,6 +517,7 @@ export default function DevOpsPage() {
   const [apps, setApps] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showConnectModal, setShowConnectModal] = useState(false);
+  const [showGithubPrompt, setShowGithubPrompt] = useState(false);
   const urlParams = new URLSearchParams(window.location.search);
 
   // Check for OAuth callback result
@@ -512,14 +572,31 @@ export default function DevOpsPage() {
         </div>
         <div className="flex items-center gap-3">
           {githubStatus.connected ? (
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-400/10 border border-emerald-400/20 rounded-lg">
-              <SiGithub className="w-4 h-4 text-emerald-400" />
-              <span className="text-emerald-400 text-sm">{githubStatus.username}</span>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-400/10 border border-emerald-400/20 rounded-lg">
+                <SiGithub className="w-4 h-4 text-emerald-400" />
+                <span className="text-emerald-400 text-sm">{githubStatus.username}</span>
+              </div>
+              <button
+                onClick={async () => {
+                  if (!window.confirm('Disconnect GitHub account?')) return;
+                  try {
+                    await githubApi.disconnect();
+                    setGithubStatus({ connected: false, username: null });
+                  } catch (err) {
+                    alert('Failed to disconnect GitHub');
+                  }
+                }}
+                className="px-3 py-1.5 text-xs font-medium text-slate-400 hover:text-red-400 hover:bg-red-400/10 border border-transparent hover:border-red-400/20 rounded-lg transition-colors"
+                title="Disconnect GitHub"
+              >
+                Disconnect
+              </button>
             </div>
           ) : (
             <button
               id="connect-github-btn"
-              onClick={() => githubApi.initiateAuth().catch(console.error)}
+              onClick={() => setShowGithubPrompt(true)}
               className="flex items-center gap-2 px-4 py-2 bg-[#24292e] hover:bg-[#2f363d] text-white rounded-lg text-sm font-medium transition-colors border border-slate-600/50"
             >
               <SiGithub className="w-4 h-4" />
@@ -589,7 +666,7 @@ export default function DevOpsPage() {
             </button>
           ) : (
             <button
-              onClick={() => githubApi.initiateAuth().catch(console.error)}
+              onClick={() => setShowGithubPrompt(true)}
               className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#24292e] hover:bg-[#2f363d] text-white rounded-xl text-sm font-medium transition-colors border border-slate-600/50"
             >
               <SiGithub className="w-4 h-4" />
@@ -611,6 +688,15 @@ export default function DevOpsPage() {
           <ConnectRepoModal
             onClose={() => setShowConnectModal(false)}
             onConnect={handleConnectRepo}
+          />
+        )}
+        {showGithubPrompt && (
+          <GithubLoginPrompt
+            onClose={() => setShowGithubPrompt(false)}
+            onSubmit={(login) => {
+              setShowGithubPrompt(false);
+              githubApi.initiateAuth(login).catch(console.error);
+            }}
           />
         )}
       </AnimatePresence>
