@@ -5,6 +5,7 @@ import { FcGoogle } from 'react-icons/fc';
 import { HiOutlineCheck } from 'react-icons/hi';
 import { useAuthStore } from '../store/authStore';
 import api from '../services/api';
+import { usePageMeta } from '../hooks/usePageMeta';
 
 const benefits = [
   'Unlimited projects & tasks',
@@ -14,15 +15,18 @@ const benefits = [
 ];
 
 export default function SignupPage() {
+  usePageMeta('Create Account', 'Create a free SaaSify account. Start managing projects, tasks, and team collaboration today.', true);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [tenantName, setTenantName] = useState('');
+  const [honeypot, setHoneypot] = useState('');
   const { register, isLoading, error } = useAuthStore();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (honeypot) return; // Bot detected — silent reject
     const success = await register(name, email, password, tenantName);
     if (success) navigate('/dashboard');
   };
@@ -95,9 +99,16 @@ export default function SignupPage() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Honeypot — invisible to humans */}
+            <div aria-hidden="true" style={{ position: 'absolute', left: '-9999px', width: 0, height: 0, overflow: 'hidden' }}>
+              <label htmlFor="hp-url">Website URL</label>
+              <input id="hp-url" name="url" type="text" tabIndex={-1} autoComplete="off" value={honeypot} onChange={(e) => setHoneypot(e.target.value)} />
+            </div>
+
             <div>
-              <label className="text-[#171820] text-sm font-medium block mb-1.5">Full Name</label>
+              <label htmlFor="signup-name" className="text-[#171820] text-sm font-medium block mb-1.5">Full Name</label>
               <input
+                id="signup-name"
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -107,8 +118,9 @@ export default function SignupPage() {
               />
             </div>
             <div>
-              <label className="text-[#171820] text-sm font-medium block mb-1.5">Email</label>
+              <label htmlFor="signup-email" className="text-[#171820] text-sm font-medium block mb-1.5">Email</label>
               <input
+                id="signup-email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -118,8 +130,9 @@ export default function SignupPage() {
               />
             </div>
             <div>
-              <label className="text-[#171820] text-sm font-medium block mb-1.5">Password</label>
+              <label htmlFor="signup-password" className="text-[#171820] text-sm font-medium block mb-1.5">Password</label>
               <input
+                id="signup-password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -129,8 +142,9 @@ export default function SignupPage() {
               />
             </div>
             <div>
-              <label className="text-[#171820] text-sm font-medium block mb-1.5">Organization Name</label>
+              <label htmlFor="signup-org" className="text-[#171820] text-sm font-medium block mb-1.5">Organization Name</label>
               <input
+                id="signup-org"
                 type="text"
                 value={tenantName}
                 onChange={(e) => setTenantName(e.target.value)}
@@ -170,6 +184,12 @@ export default function SignupPage() {
             <Link to="/login" className="text-[#171820] font-semibold hover:text-[#C4F13B] transition-colors">
               Sign in
             </Link>
+          </p>
+          <p className="text-[#969A92] text-xs text-center mt-4">
+            By creating an account you agree to our{' '}
+            <Link to="/terms" className="underline hover:text-[#6B7068] transition-colors">Terms</Link>
+            {' '}and{' '}
+            <Link to="/privacy-policy" className="underline hover:text-[#6B7068] transition-colors">Privacy Policy</Link>.
           </p>
         </motion.div>
       </div>

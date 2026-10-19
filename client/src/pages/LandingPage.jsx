@@ -6,6 +6,7 @@ import {
   HiOutlineUsers, HiOutlineLightningBolt, HiOutlineCheck, HiOutlineArrowRight,
   HiOutlineGlobe, HiOutlineCog, HiOutlineBell, HiMenu, HiX,
 } from 'react-icons/hi';
+import { usePageMeta } from '../hooks/usePageMeta';
 
 const features = [
   { icon: HiOutlineViewGrid,      title: 'Kanban Boards',       description: 'Visualize your workflow with drag-and-drop task boards. Track progress across Backlog, To Do, In Progress, Review, and Done.', accent: '#C4F13B' },
@@ -48,6 +49,11 @@ const STEPS = [
 ];
 
 export default function LandingPage() {
+  usePageMeta(
+    'Project & Task Management for Modern Teams',
+    'SaaSify is a multi-tenant project and task management platform. Kanban boards, real-time collaboration, analytics, and DevOps deployments — all in one place.',
+    false
+  );
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
@@ -559,29 +565,29 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
             <div>
-              <div className="flex items-center gap-2 mb-4">
+              <Link to="/" className="flex items-center gap-2 mb-4" aria-label="SaaSify home">
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#171820' }}>
                   <span className="font-black text-xs" style={{ color: '#C4F13B' }}>S</span>
                 </div>
                 <span className="text-[#171820] font-bold text-lg">SaaSify</span>
-              </div>
+              </Link>
               <p className="text-[#969A92] text-sm leading-relaxed">
                 Multi-tenant task management built for modern teams.
               </p>
             </div>
             {[
-              { title: 'Product', links: ['Features', 'Pricing', 'Integrations', 'Changelog'] },
-              { title: 'Company', links: ['About', 'Blog', 'Careers', 'Press'] },
-              { title: 'Support', links: ['Help Center', 'API Docs', 'Status', 'Contact'] },
+              { title: 'Product', links: [{ label: 'Features', href: '#features' }, { label: 'Pricing', href: '#pricing' }] },
+              { title: 'Legal',   links: [{ label: 'Privacy Policy', href: '/privacy-policy', internal: true }, { label: 'Terms of Service', href: '/terms', internal: true }] },
             ].map((col) => (
               <div key={col.title}>
                 <h4 className="text-[#171820] font-semibold text-sm mb-4">{col.title}</h4>
                 <ul className="space-y-2.5">
                   {col.links.map((link) => (
-                    <li key={link}>
-                      <a href="#" className="text-[#969A92] hover:text-[#171820] text-sm transition-colors">
-                        {link}
-                      </a>
+                    <li key={link.label}>
+                      {link.internal
+                        ? <Link to={link.href} className="text-[#969A92] hover:text-[#171820] text-sm transition-colors">{link.label}</Link>
+                        : <a href={link.href} className="text-[#969A92] hover:text-[#171820] text-sm transition-colors">{link.label}</a>
+                      }
                     </li>
                   ))}
                 </ul>
@@ -592,11 +598,8 @@ export default function LandingPage() {
           <div className="border-t border-[#E5E7E0] pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-[#969A92] text-sm">© 2026 SaaSify. All rights reserved.</p>
             <div className="flex gap-6">
-              {['Privacy', 'Terms', 'Cookies'].map((l) => (
-                <a key={l} href="#" className="text-[#969A92] hover:text-[#171820] text-sm transition-colors">
-                  {l}
-                </a>
-              ))}
+              <Link to="/privacy-policy" className="text-[#969A92] hover:text-[#171820] text-sm transition-colors">Privacy Policy</Link>
+              <Link to="/terms"          className="text-[#969A92] hover:text-[#171820] text-sm transition-colors">Terms of Service</Link>
             </div>
           </div>
         </div>

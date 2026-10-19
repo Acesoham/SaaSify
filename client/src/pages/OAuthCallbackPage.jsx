@@ -2,8 +2,10 @@ import { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuthStore } from '../store/authStore';
+import { usePageMeta } from '../hooks/usePageMeta';
 
 export default function OAuthCallbackPage() {
+  usePageMeta('Signing In…', '', true);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { fetchUser } = useAuthStore();

@@ -1,4 +1,4 @@
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuthStore } from '../../store/authStore';
 import {
@@ -31,14 +31,14 @@ export default function Sidebar() {
     <aside className="fixed left-0 top-0 h-screen w-[240px] flex flex-col z-40"
            style={{ backgroundColor: '#171820' }}>
 
-      {/* Logo */}
-      <div className="px-5 py-5 flex items-center gap-2.5">
+      {/* Logo — navigates to landing page */}
+      <Link to="/" className="px-5 py-5 flex items-center gap-2.5" aria-label="SaaSify home">
         <div className="w-8 h-8 rounded-lg flex items-center justify-center"
              style={{ backgroundColor: '#C4F13B' }}>
           <span className="font-black text-sm" style={{ color: '#171820' }}>S</span>
         </div>
         <span className="text-white font-bold text-lg tracking-tight">SaaSify</span>
-      </div>
+      </Link>
 
       {/* Tenant Selector */}
       <div className="mx-4 mb-5 p-3 rounded-xl cursor-pointer transition-all"
@@ -61,7 +61,7 @@ export default function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-3 space-y-0.5">
+      <nav className="flex-1 px-3 space-y-0.5" aria-label="Main navigation">
         <p className="text-xs font-semibold uppercase tracking-wider px-3 mb-2"
            style={{ color: '#4A4D45' }}>
           Navigation
@@ -102,7 +102,8 @@ export default function Sidebar() {
           </div>
           <button
             onClick={logout}
-            title="Logout"
+            title="Sign out"
+            aria-label="Sign out of SaaSify"
             className="p-1.5 rounded-lg transition-colors"
             style={{ color: '#969A92' }}
             onMouseEnter={(e) => { e.currentTarget.style.color = '#C43D3D'; e.currentTarget.style.backgroundColor = 'rgba(196,61,61,0.1)'; }}

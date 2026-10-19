@@ -4,15 +4,21 @@ import { motion } from 'framer-motion';
 import { FcGoogle } from 'react-icons/fc';
 import { useAuthStore } from '../store/authStore';
 import api from '../services/api';
+import { usePageMeta } from '../hooks/usePageMeta';
 
 export default function LoginPage() {
+  usePageMeta('Sign In', 'Sign in to your SaaSify workspace. Manage projects, tasks, and team collaboration.', true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  // Honeypot: bots fill this hidden field; humans do not
+  const [honeypot, setHoneypot] = useState('');
   const { login, isLoading, error } = useAuthStore();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    // Reject silently if honeypot is filled (bot)
+    if (honeypot) return;
     const success = await login(email, password);
     if (success) navigate('/dashboard');
   };
@@ -79,9 +85,16 @@ export default function LoginPage() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Honeypot — hidden from humans, filled by bots */}
+            <div aria-hidden="true" style={{ position: 'absolute', left: '-9999px', width: 0, height: 0, overflow: 'hidden' }}>
+              <label htmlFor="hp-website">Website</label>
+              <input id="hp-website" name="website" type="text" tabIndex={-1} autoComplete="off" value={honeypot} onChange={(e) => setHoneypot(e.target.value)} />
+            </div>
+
             <div>
-              <label className="text-[#171820] text-sm font-medium block mb-1.5">Email</label>
+              <label htmlFor="login-email" className="text-[#171820] text-sm font-medium block mb-1.5">Email</label>
               <input
+                id="login-email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -91,8 +104,9 @@ export default function LoginPage() {
               />
             </div>
             <div>
-              <label className="text-[#171820] text-sm font-medium block mb-1.5">Password</label>
+              <label htmlFor="login-password" className="text-[#171820] text-sm font-medium block mb-1.5">Password</label>
               <input
+                id="login-password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
