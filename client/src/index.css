@@ -1,7 +1,30 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+
+/* ─── CSS Variables ────────────────────────────────────────────────── */
+:root {
+  --lime:          #C4F13B;
+  --lime-hover:    #B3DF30;
+  --lime-soft:     #EFF9D4;
+  --bg:            #F8F9F5;
+  --card:          #FFFFFF;
+  --secondary-bg:  #F1F3ED;
+  --sidebar-bg:    #171820;
+  --text-primary:  #171820;
+  --text-secondary:#6B7068;
+  --text-muted:    #969A92;
+  --border:        #E5E7E0;
+  --success:       #287D48;
+  --warning:       #A96612;
+  --error:         #C43D3D;
+  --info:          #3478B9;
+}
+
+/* ─── Base Reset ───────────────────────────────────────────────────── */
 * {
   margin: 0;
   padding: 0;
@@ -10,80 +33,154 @@
 
 body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background-color: #0b0b18;
-  color: #e0e0f0;
+  background-color: var(--bg);
+  color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
+/* ─── Scrollbars ───────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--secondary-bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #C8CBBA; }
 
-::-webkit-scrollbar-track {
-  background: #111124;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #2d2d5e;
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #474785;
-}
-
+/* ─── Component Layer ──────────────────────────────────────────────── */
 @layer components {
+
+  /* Cards */
   .glass-card {
-    @apply bg-dark-800/60 backdrop-blur-xl border border-dark-600/30 rounded-2xl;
+    @apply bg-white border border-[#E5E7E0] rounded-xl shadow-[0_1px_3px_rgba(23,24,32,0.06)];
   }
 
   .glass-card-hover {
-    @apply glass-card transition-all duration-300 hover:border-primary-500/30 hover:shadow-lg hover:shadow-primary-500/5;
+    @apply glass-card transition-all duration-200 hover:shadow-[0_4px_12px_rgba(23,24,32,0.10)] hover:border-[#C4F13B]/40;
   }
 
   .stat-card {
     @apply glass-card p-5 flex items-center justify-between;
   }
 
+  /* Buttons */
   .btn-primary {
-    @apply bg-primary-500 hover:bg-primary-600 text-white font-medium px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2;
+    @apply bg-[#C4F13B] hover:bg-[#B3DF30] text-[#171820] font-semibold px-4 py-2 rounded-lg
+           transition-all duration-200 flex items-center gap-2 shadow-sm
+           focus:outline-none focus:ring-2 focus:ring-[#C4F13B]/50;
   }
 
   .btn-ghost {
-    @apply text-dark-200 hover:text-white hover:bg-dark-700/50 px-3 py-2 rounded-lg transition-all duration-200;
+    @apply text-[#6B7068] hover:text-[#171820] hover:bg-[#F1F3ED]
+           px-3 py-2 rounded-lg transition-all duration-200;
   }
 
+  .btn-secondary {
+    @apply bg-white border border-[#E5E7E0] text-[#171820] font-medium px-4 py-2 rounded-lg
+           transition-all duration-200 flex items-center gap-2
+           hover:bg-[#F1F3ED] hover:border-[#C4F13B]/60
+           focus:outline-none focus:ring-2 focus:ring-[#C4F13B]/40;
+  }
+
+  /* Badges */
   .badge {
     @apply text-xs font-medium px-2.5 py-0.5 rounded-full;
   }
 
   .badge-low {
-    @apply badge bg-dark-600/50 text-dark-200;
+    @apply badge bg-[#F1F3ED] text-[#6B7068];
   }
 
   .badge-medium {
-    @apply badge bg-accent-blue/20 text-accent-blue;
+    @apply badge bg-[#3478B9]/10 text-[#3478B9];
   }
 
   .badge-high {
-    @apply badge bg-accent-orange/20 text-accent-orange;
+    @apply badge bg-[#A96612]/10 text-[#A96612];
   }
 
   .badge-urgent {
-    @apply badge bg-accent-red/20 text-accent-red;
+    @apply badge bg-[#C43D3D]/10 text-[#C43D3D];
   }
 
+  /* Sidebar nav links */
   .sidebar-link {
-    @apply flex items-center gap-3 px-4 py-2.5 rounded-xl text-dark-200 hover:text-white hover:bg-dark-700/50 transition-all duration-200 text-sm font-medium;
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-xl text-[#969A92]
+           transition-all duration-150 text-sm font-medium;
+  }
+  .sidebar-link:hover {
+    color: #ffffff;
+    background-color: rgba(255, 255, 255, 0.08);
   }
 
   .sidebar-link-active {
-    @apply sidebar-link bg-primary-500/20 text-white;
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-xl text-[#171820] font-semibold text-sm
+           bg-[#C4F13B] shadow-sm;
   }
 
+  /* Input fields */
   .input-field {
-    @apply w-full bg-dark-800/60 border border-dark-600/30 rounded-xl px-4 py-3 text-white placeholder-dark-300 focus:outline-none focus:border-primary-500/50 focus:ring-1 focus:ring-primary-500/20 transition-all;
+    @apply w-full bg-white border border-[#E5E7E0] rounded-lg px-4 py-2.5
+           text-[#171820] placeholder-[#969A92] text-sm
+           focus:outline-none focus:ring-2 focus:ring-[#C4F13B]/40 focus:border-[#C4F13B]
+           transition-all duration-150;
   }
+
+  /* Select fields */
+  select.input-field {
+    @apply appearance-none cursor-pointer;
+  }
+
+  /* Page Header */
+  .page-header {
+    @apply flex items-center justify-between mb-6;
+  }
+
+  .page-title {
+    @apply text-2xl font-bold text-[#171820];
+  }
+
+  .page-subtitle {
+    @apply text-sm text-[#6B7068] mt-0.5;
+  }
+
+  /* Table */
+  .data-table {
+    @apply w-full text-sm text-left;
+  }
+
+  .data-table thead {
+    @apply bg-[#F1F3ED] border-b border-[#E5E7E0];
+  }
+
+  .data-table th {
+    @apply px-5 py-3 text-xs font-semibold uppercase tracking-wider text-[#6B7068];
+  }
+
+  .data-table tbody tr {
+    @apply border-b border-[#E5E7E0] hover:bg-[#F8F9F5] transition-colors;
+  }
+
+  .data-table td {
+    @apply px-5 py-3.5 text-[#171820];
+  }
+
+  /* Section card */
+  .section-card {
+    @apply bg-white border border-[#E5E7E0] rounded-xl p-6 shadow-[0_1px_3px_rgba(23,24,32,0.06)];
+  }
+
+  /* Status dot */
+  .status-dot-active  { @apply w-2 h-2 rounded-full bg-[#287D48]; }
+  .status-dot-warning { @apply w-2 h-2 rounded-full bg-[#A96612]; }
+  .status-dot-error   { @apply w-2 h-2 rounded-full bg-[#C43D3D]; }
+  .status-dot-idle    { @apply w-2 h-2 rounded-full bg-[#969A92]; }
+}
+
+/* ─── Animations ───────────────────────────────────────────────────── */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out both;
 }

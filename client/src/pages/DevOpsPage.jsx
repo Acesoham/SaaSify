@@ -18,7 +18,6 @@ import {
   HiOutlineChevronDown,
   HiOutlineChevronRight,
   HiOutlineTrash,
-  HiOutlineLink,
   HiOutlineTerminal,
   HiOutlineX,
 } from 'react-icons/hi';
@@ -26,12 +25,12 @@ import { SiGithub } from 'react-icons/si';
 
 // ─── Status config ────────────────────────────────────────────────────────────
 const STATUS = {
-  queued:   { label: 'Queued',   color: 'text-yellow-400',  bg: 'bg-yellow-400/10 text-yellow-400',  icon: HiOutlineClock },
-  building: { label: 'Building', color: 'text-blue-400',    bg: 'bg-blue-400/10 text-blue-400',      icon: HiOutlineRefresh },
-  running:  { label: 'Live',     color: 'text-emerald-400', bg: 'bg-emerald-400/10 text-emerald-400',icon: HiOutlineCheckCircle },
-  failed:   { label: 'Failed',   color: 'text-red-400',     bg: 'bg-red-400/10 text-red-400',        icon: HiOutlineXCircle },
-  stopped:  { label: 'Stopped',  color: 'text-slate-400',   bg: 'bg-slate-400/10 text-slate-400',    icon: HiOutlineStop },
-  cancelled:{ label: 'Cancelled',color: 'text-slate-400',   bg: 'bg-slate-400/10 text-slate-400',    icon: HiOutlineStop },
+  queued:   { label: 'Queued',   textCls: 'text-[#A96612]',  bgCls: 'bg-[#A96612]/10 text-[#A96612]',   icon: HiOutlineClock },
+  building: { label: 'Building', textCls: 'text-[#3478B9]',  bgCls: 'bg-[#3478B9]/10 text-[#3478B9]',   icon: HiOutlineRefresh },
+  running:  { label: 'Live',     textCls: 'text-[#287D48]',  bgCls: 'bg-[#287D48]/10 text-[#287D48]',   icon: HiOutlineCheckCircle },
+  failed:   { label: 'Failed',   textCls: 'text-[#C43D3D]',  bgCls: 'bg-[#C43D3D]/10 text-[#C43D3D]',   icon: HiOutlineXCircle },
+  stopped:  { label: 'Stopped',  textCls: 'text-[#969A92]',  bgCls: 'bg-[#F1F3ED] text-[#969A92]',      icon: HiOutlineStop },
+  cancelled:{ label: 'Cancelled',textCls: 'text-[#969A92]',  bgCls: 'bg-[#F1F3ED] text-[#969A92]',      icon: HiOutlineStop },
 };
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -40,7 +39,7 @@ function StatusBadge({ status }) {
   const cfg = STATUS[status] || STATUS.queued;
   const Icon = cfg.icon;
   return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${cfg.bg}`}>
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${cfg.bgCls}`}>
       <Icon className={`w-3 h-3 ${status === 'building' ? 'animate-spin' : ''}`} />
       {cfg.label}
     </span>
@@ -50,18 +49,26 @@ function StatusBadge({ status }) {
 function GithubLoginPrompt({ onClose, onSubmit }) {
   const [login, setLogin] = useState('');
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ backgroundColor: 'rgba(23,24,32,0.45)', backdropFilter: 'blur(4px)' }}
+    >
       <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        className="bg-dark-800 border border-dark-600/40 rounded-2xl w-full max-w-sm shadow-2xl p-5"
+        initial={{ opacity: 0, scale: 0.96, y: 16 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.96, y: 16 }}
+        className="bg-white border border-[#E5E7E0] rounded-2xl w-full max-w-sm shadow-[0_20px_60px_rgba(23,24,32,0.15)] p-6"
       >
-        <h2 className="text-white font-semibold mb-2 flex items-center gap-2">
-          <SiGithub className="w-5 h-5 text-white" />
-          Connect GitHub
-        </h2>
-        <p className="text-slate-400 text-sm mb-4">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-[#171820] font-semibold text-base flex items-center gap-2">
+            <SiGithub className="w-5 h-5 text-[#171820]" />
+            Connect GitHub
+          </h2>
+          <button onClick={onClose} className="text-[#969A92] hover:text-[#171820] transition-colors p-1 rounded-lg hover:bg-[#F1F3ED]">
+            <HiOutlineX className="w-4 h-4" />
+          </button>
+        </div>
+        <p className="text-[#6B7068] text-sm mb-4">
           Enter the GitHub username you want to connect. We will ask GitHub to authorize this specific account.
         </p>
         <input
@@ -70,16 +77,17 @@ function GithubLoginPrompt({ onClose, onSubmit }) {
           placeholder="GitHub Username"
           value={login}
           onChange={(e) => setLogin(e.target.value)}
-          className="w-full bg-dark-700 border border-dark-500/50 rounded-lg px-3 py-2 text-white text-sm mb-4 outline-none focus:border-accent-purple/50"
+          onKeyDown={(e) => { if (e.key === 'Enter' && login.trim()) onSubmit(login.trim()); }}
+          className="input-field mb-4"
         />
         <div className="flex justify-end gap-3">
-          <button onClick={onClose} className="px-4 py-2 text-slate-400 hover:text-white transition-colors text-sm">
+          <button onClick={onClose} className="btn-secondary text-sm">
             Cancel
           </button>
           <button
             disabled={!login.trim()}
             onClick={() => onSubmit(login.trim())}
-            className="px-4 py-2 bg-accent-purple hover:bg-accent-purple/80 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
+            className="btn-primary text-sm disabled:opacity-50"
           >
             Continue
           </button>
@@ -113,19 +121,19 @@ function LogViewer({ deploymentId, initialLogs = [] }) {
   }, [logs]);
 
   const logColor = (level) => {
-    if (level === 'error' || level === 'stderr') return 'text-red-400';
-    if (level === 'warn') return 'text-yellow-400';
-    return 'text-slate-300';
+    if (level === 'error' || level === 'stderr') return 'text-[#C43D3D]';
+    if (level === 'warn') return 'text-[#A96612]';
+    return 'text-[#2d4a2e]';
   };
 
   return (
-    <div className="bg-[#0d1117] rounded-xl border border-slate-700/50 h-80 overflow-y-auto p-4 font-mono text-xs">
+    <div className="bg-[#0f1117] rounded-xl border border-[#E5E7E0] h-80 overflow-y-auto p-4 font-mono text-xs">
       {logs.length === 0 ? (
-        <p className="text-slate-600 italic">Waiting for logs...</p>
+        <p className="text-[#4A5568] italic">Waiting for logs...</p>
       ) : (
         logs.map((log, i) => (
           <div key={i} className={`leading-relaxed ${logColor(log.level)}`}>
-            <span className="text-slate-600 mr-2">
+            <span className="text-[#4B5563] mr-2">
               {new Date(log.timestamp).toLocaleTimeString()}
             </span>
             {log.message}
@@ -183,20 +191,27 @@ function ConnectRepoModal({ onClose, onConnect }) {
   );
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ backgroundColor: 'rgba(23,24,32,0.45)', backdropFilter: 'blur(4px)' }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
       <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        className="bg-dark-800 border border-dark-600/40 rounded-2xl w-full max-w-lg shadow-2xl"
+        initial={{ opacity: 0, scale: 0.96, y: 16 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.96, y: 16 }}
+        className="bg-white border border-[#E5E7E0] rounded-2xl w-full max-w-lg shadow-[0_20px_60px_rgba(23,24,32,0.15)] overflow-hidden"
       >
-        <div className="flex items-center justify-between p-5 border-b border-dark-600/40">
+        {/* Modal Header */}
+        <div className="flex items-center justify-between p-5 border-b border-[#E5E7E0]">
           <div className="flex items-center gap-3">
-            <SiGithub className="w-5 h-5 text-white" />
-            <h2 className="text-white font-semibold">Connect Repository</h2>
+            <div className="w-8 h-8 bg-[#171820] rounded-lg flex items-center justify-center">
+              <SiGithub className="w-4 h-4 text-white" />
+            </div>
+            <h2 className="text-[#171820] font-semibold text-base">Connect Repository</h2>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
-            <HiOutlineX className="w-5 h-5" />
+          <button onClick={onClose} className="text-[#969A92] hover:text-[#171820] transition-colors p-1 rounded-lg hover:bg-[#F1F3ED]">
+            <HiOutlineX className="w-4 h-4" />
           </button>
         </div>
 
@@ -207,35 +222,37 @@ function ConnectRepoModal({ onClose, onConnect }) {
               placeholder="Search repositories..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-dark-700 border border-dark-500/50 rounded-lg px-3 py-2 text-white text-sm placeholder-slate-500 outline-none focus:border-accent-purple/50"
+              className="input-field"
             />
             <div className="max-h-64 overflow-y-auto space-y-1">
               {loading ? (
-                <p className="text-slate-400 text-sm text-center py-4">Loading repositories...</p>
+                <div className="flex items-center justify-center py-6">
+                  <div className="w-6 h-6 border-2 border-[#C4F13B] border-t-transparent rounded-full animate-spin" />
+                </div>
               ) : (
                 <>
                   {filtered.length === 0 ? (
-                    <p className="text-slate-400 text-sm text-center py-4">No repositories found in your account.</p>
+                    <p className="text-[#969A92] text-sm text-center py-4">No repositories found.</p>
                   ) : (
                     filtered.map((repo) => (
                       <button
                         key={repo.id}
                         onClick={() => selectRepo(repo)}
-                        className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-dark-700 transition-colors text-left"
+                        className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-[#F8F9F5] transition-colors text-left border border-transparent hover:border-[#E5E7E0]"
                       >
-                        <HiOutlineCode className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                        <HiOutlineCode className="w-4 h-4 text-[#969A92] flex-shrink-0" />
                         <div className="min-w-0">
-                          <p className="text-white text-sm font-medium truncate">{repo.fullName}</p>
+                          <p className="text-[#171820] text-sm font-medium truncate">{repo.fullName}</p>
                           {repo.description && (
-                            <p className="text-slate-500 text-xs truncate">{repo.description}</p>
+                            <p className="text-[#969A92] text-xs truncate">{repo.description}</p>
                           )}
                         </div>
                         <div className="ml-auto flex items-center gap-2 flex-shrink-0">
                           {repo.private && (
-                            <span className="text-xs bg-slate-700 text-slate-300 px-1.5 py-0.5 rounded">Private</span>
+                            <span className="text-xs bg-[#F1F3ED] text-[#6B7068] px-1.5 py-0.5 rounded">Private</span>
                           )}
                           {repo.language && (
-                            <span className="text-xs text-slate-400">{repo.language}</span>
+                            <span className="text-xs text-[#969A92]">{repo.language}</span>
                           )}
                         </div>
                       </button>
@@ -245,12 +262,12 @@ function ConnectRepoModal({ onClose, onConnect }) {
                   {search.includes('/') && !filtered.find(r => r.fullName.toLowerCase() === search.toLowerCase()) && (
                     <button
                       onClick={() => selectRepo({ id: search, fullName: search, name: search.split('/')[1], defaultBranch: 'main' })}
-                      className="w-full flex items-center gap-3 p-3 mt-2 rounded-lg border border-dashed border-accent-purple/30 bg-accent-purple/5 hover:bg-accent-purple/10 transition-colors text-left"
+                      className="w-full flex items-center gap-3 p-3 mt-2 rounded-lg border border-dashed border-[#C4F13B]/50 bg-[#EFF9D4]/50 hover:bg-[#EFF9D4] transition-colors text-left"
                     >
-                      <SiGithub className="w-4 h-4 text-accent-purple flex-shrink-0" />
+                      <SiGithub className="w-4 h-4 text-[#171820] flex-shrink-0" />
                       <div className="min-w-0">
-                        <p className="text-accent-purple text-sm font-medium truncate">Connect public repo: {search}</p>
-                        <p className="text-accent-purple/70 text-xs truncate">Deploy this repository manually</p>
+                        <p className="text-[#171820] text-sm font-medium truncate">Connect public repo: {search}</p>
+                        <p className="text-[#6B7068] text-xs truncate">Deploy this repository manually</p>
                       </div>
                     </button>
                   )}
@@ -260,57 +277,59 @@ function ConnectRepoModal({ onClose, onConnect }) {
           </div>
         ) : (
           <div className="p-5 space-y-4">
-            <button onClick={() => setSelected(null)} className="text-slate-400 hover:text-white text-sm flex items-center gap-1 transition-colors">
+            <button onClick={() => setSelected(null)} className="text-[#6B7068] hover:text-[#171820] text-sm flex items-center gap-1 transition-colors">
               ← Back to repositories
             </button>
 
-            <div className="bg-dark-700/50 rounded-lg p-3 flex items-center gap-3">
-              <SiGithub className="w-4 h-4 text-slate-300" />
-              <span className="text-white text-sm font-medium">{selected.fullName}</span>
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-[#F8F9F5] border border-[#E5E7E0]">
+              <SiGithub className="w-4 h-4 text-[#171820]" />
+              <span className="text-[#171820] text-sm font-medium">{selected.fullName}</span>
             </div>
 
             <div className="space-y-3">
               <div>
-                <label className="block text-slate-400 text-xs mb-1.5">App Name</label>
+                <label className="block text-[#6B7068] text-sm mb-1.5 font-medium">App Name</label>
                 <input
                   value={form.name}
                   onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                  className="w-full bg-dark-700 border border-dark-500/50 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-accent-purple/50"
+                  className="input-field"
                   placeholder="my-app"
                 />
               </div>
               <div>
-                <label className="block text-slate-400 text-xs mb-1.5">Deploy Branch</label>
+                <label className="block text-[#6B7068] text-sm mb-1.5 font-medium">Deploy Branch</label>
                 <select
                   value={form.defaultBranch}
                   onChange={(e) => setForm((f) => ({ ...f, defaultBranch: e.target.value }))}
-                  className="w-full bg-dark-700 border border-dark-500/50 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-accent-purple/50"
+                  className="input-field"
                 >
                   {branches.map((b) => <option key={b}>{b}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-slate-400 text-xs mb-1.5">Container Port</label>
+                <label className="block text-[#6B7068] text-sm mb-1.5 font-medium">Container Port</label>
                 <input
                   type="number"
                   value={form.containerPort}
                   onChange={(e) => setForm((f) => ({ ...f, containerPort: Number(e.target.value) }))}
-                  className="w-full bg-dark-700 border border-dark-500/50 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-accent-purple/50"
+                  className="input-field"
                 />
               </div>
             </div>
 
-            <button
+            <motion.button
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
               onClick={handleConnect}
               disabled={connecting || !form.name}
-              className="w-full bg-accent-purple hover:bg-accent-purple/80 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg py-2.5 text-sm font-medium transition-colors flex items-center justify-center gap-2"
+              className="w-full btn-primary justify-center disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {connecting ? (
                 <><HiOutlineRefresh className="w-4 h-4 animate-spin" /> Connecting...</>
               ) : (
                 <><HiOutlinePlus className="w-4 h-4" /> Connect & Deploy</>
               )}
-            </button>
+            </motion.button>
           </div>
         )}
       </motion.div>
@@ -370,18 +389,18 @@ function AppCard({ app, onDeploy, onDelete }) {
       layout
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-dark-800/60 border border-dark-600/30 hover:border-dark-500/50 rounded-2xl overflow-hidden transition-all"
+      className="bg-white border border-[#E5E7E0] hover:border-[#C4F13B]/40 rounded-2xl overflow-hidden transition-all shadow-[0_1px_3px_rgba(23,24,32,0.06)] hover:shadow-[0_4px_12px_rgba(23,24,32,0.08)]"
     >
       {/* App Header */}
       <div className="p-5">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-purple/30 to-blue-500/30 flex items-center justify-center flex-shrink-0">
-              <HiOutlineCode className="w-5 h-5 text-accent-purple" />
+            <div className="w-10 h-10 rounded-xl bg-[#EFF9D4] flex items-center justify-center flex-shrink-0">
+              <HiOutlineCode className="w-5 h-5 text-[#171820]" />
             </div>
             <div className="min-w-0">
-              <h3 className="text-white font-semibold truncate">{app.name}</h3>
-              <p className="text-slate-400 text-xs flex items-center gap-1 mt-0.5">
+              <h3 className="text-[#171820] font-semibold truncate">{app.name}</h3>
+              <p className="text-[#969A92] text-xs flex items-center gap-1 mt-0.5">
                 <SiGithub className="w-3 h-3" />
                 {app.repoFullName}
               </p>
@@ -398,7 +417,7 @@ function AppCard({ app, onDeploy, onDelete }) {
             href={liveUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-3 inline-flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 transition-colors bg-emerald-400/5 px-2.5 py-1 rounded-lg border border-emerald-400/20"
+            className="mt-3 inline-flex items-center gap-1.5 text-xs text-[#287D48] hover:text-[#1f6038] transition-colors bg-[#287D48]/5 px-2.5 py-1 rounded-lg border border-[#287D48]/20"
           >
             <HiOutlineGlobe className="w-3.5 h-3.5" />
             {liveUrl}
@@ -412,7 +431,7 @@ function AppCard({ app, onDeploy, onDelete }) {
             id={`deploy-btn-${app._id}`}
             onClick={handleDeploy}
             disabled={deploying}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-accent-purple/10 hover:bg-accent-purple/20 text-accent-purple border border-accent-purple/20 rounded-lg text-xs font-medium transition-all disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#C4F13B] hover:bg-[#B3DF30] text-[#171820] rounded-lg text-xs font-semibold transition-all disabled:opacity-50 shadow-sm"
           >
             {deploying ? (
               <HiOutlineRefresh className="w-3.5 h-3.5 animate-spin" />
@@ -427,7 +446,7 @@ function AppCard({ app, onDeploy, onDelete }) {
               setExpanded(!expanded);
               if (!expanded) loadDeployments();
             }}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-dark-700/60 hover:bg-dark-600/60 text-slate-300 border border-dark-500/30 rounded-lg text-xs font-medium transition-all"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#F1F3ED] hover:bg-[#E5E7E0] text-[#6B7068] border border-[#E5E7E0] rounded-lg text-xs font-medium transition-all"
           >
             <HiOutlineTerminal className="w-3.5 h-3.5" />
             Deployments
@@ -436,7 +455,7 @@ function AppCard({ app, onDeploy, onDelete }) {
 
           <button
             onClick={() => onDelete(app._id, app.name)}
-            className="ml-auto flex items-center gap-1 px-2.5 py-1.5 text-slate-500 hover:text-red-400 hover:bg-red-400/10 rounded-lg text-xs transition-all"
+            className="ml-auto flex items-center gap-1 px-2.5 py-1.5 text-[#969A92] hover:text-[#C43D3D] hover:bg-[#C43D3D]/10 rounded-lg text-xs transition-all"
           >
             <HiOutlineTrash className="w-3.5 h-3.5" />
           </button>
@@ -451,24 +470,24 @@ function AppCard({ app, onDeploy, onDelete }) {
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="border-t border-dark-600/30 overflow-hidden"
+            className="border-t border-[#E5E7E0] overflow-hidden"
           >
             <div className="p-4 space-y-3">
               {deployments.length === 0 ? (
-                <p className="text-slate-500 text-sm text-center py-4">No deployments yet</p>
+                <p className="text-[#969A92] text-sm text-center py-4">No deployments yet</p>
               ) : (
                 deployments.map((deploy) => (
                   <div key={deploy._id}>
                     <button
                       onClick={() => setActiveDeployId(activeDeployId === deploy._id ? null : deploy._id)}
-                      className="w-full flex items-center gap-3 p-3 rounded-xl bg-dark-700/40 hover:bg-dark-600/40 transition-all text-left"
+                      className="w-full flex items-center gap-3 p-3 rounded-xl bg-[#F8F9F5] hover:bg-[#F1F3ED] transition-all text-left border border-[#E5E7E0]"
                     >
                       <StatusBadge status={deploy.status} />
                       <div className="flex-1 min-w-0">
-                        <p className="text-white text-xs font-mono truncate">
+                        <p className="text-[#171820] text-xs font-mono truncate">
                           {deploy.commitMessage || deploy.commitSha?.slice(0, 7) || 'Manual trigger'}
                         </p>
-                        <p className="text-slate-500 text-xs mt-0.5">
+                        <p className="text-[#969A92] text-xs mt-0.5">
                           {deploy.branch} · {new Date(deploy.createdAt).toLocaleString()}
                           {deploy.duration && ` · ${(deploy.duration / 1000).toFixed(1)}s`}
                         </p>
@@ -479,7 +498,7 @@ function AppCard({ app, onDeploy, onDelete }) {
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={(e) => e.stopPropagation()}
-                          className="text-emerald-400 hover:text-emerald-300"
+                          className="text-[#287D48] hover:text-[#1f6038] transition-colors"
                         >
                           <HiOutlineExternalLink className="w-4 h-4" />
                         </a>
@@ -567,15 +586,15 @@ export default function DevOpsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white">Deployments</h1>
-          <p className="text-slate-400 mt-1">Connect repositories and deploy applications automatically</p>
+          <h1 className="text-2xl font-bold text-[#171820]">Deployments</h1>
+          <p className="text-[#6B7068] text-sm mt-0.5">Connect repositories and deploy applications automatically</p>
         </div>
         <div className="flex items-center gap-3">
           {githubStatus.connected ? (
             <div className="flex items-center gap-2">
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-400/10 border border-emerald-400/20 rounded-lg">
-                <SiGithub className="w-4 h-4 text-emerald-400" />
-                <span className="text-emerald-400 text-sm">{githubStatus.username}</span>
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-[#287D48]/10 border border-[#287D48]/20 rounded-lg">
+                <SiGithub className="w-4 h-4 text-[#287D48]" />
+                <span className="text-[#287D48] text-sm font-medium">{githubStatus.username}</span>
               </div>
               <button
                 onClick={async () => {
@@ -583,11 +602,11 @@ export default function DevOpsPage() {
                   try {
                     await githubApi.disconnect();
                     setGithubStatus({ connected: false, username: null });
-                  } catch (err) {
+                  } catch {
                     alert('Failed to disconnect GitHub');
                   }
                 }}
-                className="px-3 py-1.5 text-xs font-medium text-slate-400 hover:text-red-400 hover:bg-red-400/10 border border-transparent hover:border-red-400/20 rounded-lg transition-colors"
+                className="px-3 py-1.5 text-xs font-medium text-[#969A92] hover:text-[#C43D3D] hover:bg-[#C43D3D]/10 border border-[#E5E7E0] hover:border-[#C43D3D]/20 rounded-lg transition-colors"
                 title="Disconnect GitHub"
               >
                 Disconnect
@@ -597,7 +616,7 @@ export default function DevOpsPage() {
             <button
               id="connect-github-btn"
               onClick={() => setShowGithubPrompt(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-[#24292e] hover:bg-[#2f363d] text-white rounded-lg text-sm font-medium transition-colors border border-slate-600/50"
+              className="flex items-center gap-2 px-4 py-2 bg-[#171820] hover:bg-[#2a2d38] text-white rounded-lg text-sm font-medium transition-colors"
             >
               <SiGithub className="w-4 h-4" />
               Connect GitHub
@@ -607,7 +626,7 @@ export default function DevOpsPage() {
             <button
               id="add-repo-btn"
               onClick={() => setShowConnectModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-accent-purple hover:bg-accent-purple/80 text-white rounded-lg text-sm font-medium transition-colors"
+              className="btn-primary"
             >
               <HiOutlinePlus className="w-4 h-4" />
               New App
@@ -619,18 +638,19 @@ export default function DevOpsPage() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: 'Total Apps', value: apps.length, color: 'text-white' },
-          { label: 'Live', value: runningCount, color: 'text-emerald-400' },
-          { label: 'Building', value: buildingCount, color: 'text-blue-400' },
-          { label: 'GitHub', value: githubStatus.connected ? 'Connected' : 'Disconnected', color: githubStatus.connected ? 'text-emerald-400' : 'text-slate-400' },
-        ].map((stat) => (
+          { label: 'Total Apps', value: apps.length,       color: 'text-[#171820]' },
+          { label: 'Live',       value: runningCount,      color: 'text-[#287D48]'  },
+          { label: 'Building',   value: buildingCount,     color: 'text-[#3478B9]'  },
+          { label: 'GitHub',     value: githubStatus.connected ? 'Connected' : 'Disconnected', color: githubStatus.connected ? 'text-[#287D48]' : 'text-[#969A92]' },
+        ].map((stat, i) => (
           <motion.div
             key={stat.label}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="glass-card p-4 text-center"
+            transition={{ delay: i * 0.05 }}
+            className="bg-white border border-[#E5E7E0] rounded-xl p-4 text-center shadow-[0_1px_3px_rgba(23,24,32,0.06)]"
           >
-            <p className="text-slate-400 text-xs mb-1">{stat.label}</p>
+            <p className="text-[#969A92] text-xs mb-1">{stat.label}</p>
             <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
           </motion.div>
         ))}
@@ -639,19 +659,19 @@ export default function DevOpsPage() {
       {/* Apps List */}
       {loading ? (
         <div className="flex items-center justify-center h-40">
-          <HiOutlineRefresh className="w-6 h-6 text-slate-500 animate-spin" />
+          <div className="w-7 h-7 border-2 border-[#C4F13B] border-t-transparent rounded-full animate-spin" />
         </div>
       ) : apps.length === 0 ? (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="glass-card p-12 text-center"
+          className="bg-white border border-[#E5E7E0] rounded-xl p-12 text-center shadow-[0_1px_3px_rgba(23,24,32,0.06)]"
         >
-          <div className="w-16 h-16 bg-dark-700 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <HiOutlineCode className="w-8 h-8 text-slate-500" />
+          <div className="w-16 h-16 bg-[#EFF9D4] rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <HiOutlineCode className="w-8 h-8 text-[#171820]" />
           </div>
-          <h3 className="text-white font-semibold text-lg mb-2">No apps connected</h3>
-          <p className="text-slate-400 text-sm mb-6">
+          <h3 className="text-[#171820] font-semibold text-lg mb-2">No apps connected</h3>
+          <p className="text-[#969A92] text-sm mb-6">
             {githubStatus.connected
               ? 'Connect a GitHub repository to start deploying'
               : 'Connect your GitHub account to get started'}
@@ -659,7 +679,7 @@ export default function DevOpsPage() {
           {githubStatus.connected ? (
             <button
               onClick={() => setShowConnectModal(true)}
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-accent-purple hover:bg-accent-purple/80 text-white rounded-xl text-sm font-medium transition-colors"
+              className="btn-primary mx-auto"
             >
               <HiOutlinePlus className="w-4 h-4" />
               Connect Repository
@@ -667,7 +687,7 @@ export default function DevOpsPage() {
           ) : (
             <button
               onClick={() => setShowGithubPrompt(true)}
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#24292e] hover:bg-[#2f363d] text-white rounded-xl text-sm font-medium transition-colors border border-slate-600/50"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#171820] hover:bg-[#2a2d38] text-white rounded-xl text-sm font-medium transition-colors"
             >
               <SiGithub className="w-4 h-4" />
               Connect GitHub
@@ -682,7 +702,7 @@ export default function DevOpsPage() {
         </div>
       )}
 
-      {/* Connect Repo Modal */}
+      {/* Modals */}
       <AnimatePresence>
         {showConnectModal && (
           <ConnectRepoModal

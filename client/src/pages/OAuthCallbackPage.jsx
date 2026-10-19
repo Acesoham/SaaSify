@@ -16,7 +16,7 @@ export default function OAuthCallbackPage() {
       if (accessToken && refreshToken) {
         // Save token correctly so api.js uses it
         useAuthStore.getState().setAccessToken(accessToken);
-        
+
         // Refresh the user context
         await fetchUser();
         navigate('/dashboard', { replace: true });
@@ -30,15 +30,15 @@ export default function OAuthCallbackPage() {
   }, [searchParams, navigate, fetchUser]);
 
   return (
-    <div className="min-h-screen bg-dark-950 flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#F8F9F5' }}>
       <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
+        initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         className="text-center"
       >
-        <div className="w-16 h-16 border-4 border-primary-500/20 border-t-primary-500 rounded-full animate-spin mx-auto mb-6"></div>
-        <h2 className="text-xl font-semibold text-white mb-2">Authenticating...</h2>
-        <p className="text-dark-400">Please wait while we complete your sign in.</p>
+        <div className="w-14 h-14 border-4 border-[#E5E7E0] border-t-[#C4F13B] rounded-full animate-spin mx-auto mb-5" />
+        <h2 className="text-xl font-semibold text-[#171820] mb-1.5">Authenticating…</h2>
+        <p className="text-[#6B7068] text-sm">Please wait while we complete your sign in.</p>
       </motion.div>
     </div>
   );

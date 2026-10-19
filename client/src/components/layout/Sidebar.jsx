@@ -12,16 +12,15 @@ import {
   HiOutlineChevronDown,
   HiOutlineLogout,
 } from 'react-icons/hi';
-import logo from '../../../assets/saasify-logo.png';
 
 const navItems = [
   { to: '/dashboard', icon: HiOutlineViewGrid, label: 'Dashboard' },
-  { to: '/projects', icon: HiOutlineFolder, label: 'Projects' },
-  { to: '/tasks', icon: HiOutlineClipboardList, label: 'Tasks' },
-  { to: '/analytics', icon: HiOutlineChartBar, label: 'Analytics' },
-  { to: '/team', icon: HiOutlineUserGroup, label: 'Team' },
-  { to: '/devops', icon: HiOutlineServer, label: 'DevOps' },
-  { to: '/settings', icon: HiOutlineCog, label: 'Settings' },
+  { to: '/projects',  icon: HiOutlineFolder,        label: 'Projects' },
+  { to: '/tasks',     icon: HiOutlineClipboardList,  label: 'Tasks' },
+  { to: '/analytics', icon: HiOutlineChartBar,       label: 'Analytics' },
+  { to: '/team',      icon: HiOutlineUserGroup,      label: 'Team' },
+  { to: '/devops',    icon: HiOutlineServer,         label: 'DevOps' },
+  { to: '/settings',  icon: HiOutlineCog,            label: 'Settings' },
 ];
 
 export default function Sidebar() {
@@ -29,38 +28,56 @@ export default function Sidebar() {
   const location = useLocation();
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-[240px] bg-dark-900/80 backdrop-blur-xl border-r border-dark-700/50 flex flex-col z-40">
+    <aside className="fixed left-0 top-0 h-screen w-[240px] flex flex-col z-40"
+           style={{ backgroundColor: '#171820' }}>
+
       {/* Logo */}
       <div className="px-5 py-5 flex items-center gap-2.5">
-        <img src={logo} alt="SaaSify Logo" className="h-8 w-auto object-contain" />
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center"
+             style={{ backgroundColor: '#C4F13B' }}>
+          <span className="font-black text-sm" style={{ color: '#171820' }}>S</span>
+        </div>
+        <span className="text-white font-bold text-lg tracking-tight">SaaSify</span>
       </div>
 
       {/* Tenant Selector */}
-      <div className="mx-4 mb-4 p-3 rounded-xl bg-dark-800/50 border border-dark-600/30 cursor-pointer hover:border-primary-500/30 transition-all">
+      <div className="mx-4 mb-5 p-3 rounded-xl cursor-pointer transition-all"
+           style={{ backgroundColor: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}>
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-gradient-to-br from-primary-500 to-blue-600 rounded-lg flex items-center justify-center text-white text-xs font-bold">
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold"
+               style={{ backgroundColor: '#C4F13B', color: '#171820' }}>
             {currentTenant?.name?.charAt(0) || 'A'}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-white text-sm font-semibold truncate">{currentTenant?.name || 'Select Org'}</p>
-            <p className="text-dark-300 text-xs">{currentTenant?.memberCount || 0} members</p>
+            <p className="text-white text-sm font-semibold truncate">
+              {currentTenant?.name || 'Select Org'}
+            </p>
+            <p className="text-xs" style={{ color: '#969A92' }}>
+              {currentTenant?.memberCount || 0} members
+            </p>
           </div>
-          <HiOutlineChevronDown className="text-dark-400 w-4 h-4 flex-shrink-0" />
+          <HiOutlineChevronDown className="w-4 h-4 flex-shrink-0" style={{ color: '#969A92' }} />
         </div>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-3 space-y-1">
+      <nav className="flex-1 px-3 space-y-0.5">
+        <p className="text-xs font-semibold uppercase tracking-wider px-3 mb-2"
+           style={{ color: '#4A4D45' }}>
+          Navigation
+        </p>
         {navItems.map((item) => {
-          const isActive = location.pathname === item.to || location.pathname.startsWith(item.to + '/');
+          const isActive =
+            location.pathname === item.to ||
+            location.pathname.startsWith(item.to + '/');
           return (
             <NavLink key={item.to} to={item.to}>
               <motion.div
                 className={isActive ? 'sidebar-link-active' : 'sidebar-link'}
-                whileHover={{ x: 2 }}
+                whileHover={{ x: isActive ? 0 : 2 }}
                 whileTap={{ scale: 0.98 }}
               >
-                <item.icon className="w-5 h-5 flex-shrink-0" />
+                <item.icon className="w-[18px] h-[18px] flex-shrink-0" />
                 <span>{item.label}</span>
               </motion.div>
             </NavLink>
@@ -69,21 +86,29 @@ export default function Sidebar() {
       </nav>
 
       {/* User Profile */}
-      <div className="p-4 border-t border-dark-700/50">
+      <div className="p-4" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-gradient-to-br from-accent-green to-accent-cyan rounded-full flex items-center justify-center text-white text-xs font-bold">
+          <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+               style={{ backgroundColor: '#C4F13B', color: '#171820' }}>
             {user?.name?.charAt(0) || 'U'}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-white text-sm font-medium truncate">{user?.name || 'User'}</p>
-            <p className="text-dark-400 text-xs truncate">{user?.email || ''}</p>
+            <p className="text-white text-sm font-medium truncate">
+              {user?.name || 'User'}
+            </p>
+            <p className="text-xs truncate" style={{ color: '#969A92' }}>
+              {user?.email || ''}
+            </p>
           </div>
-          <button 
+          <button
             onClick={logout}
             title="Logout"
-            className="p-2 hover:bg-dark-700/50 rounded-lg transition-colors text-dark-400 hover:text-accent-red"
+            className="p-1.5 rounded-lg transition-colors"
+            style={{ color: '#969A92' }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = '#C43D3D'; e.currentTarget.style.backgroundColor = 'rgba(196,61,61,0.1)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = '#969A92'; e.currentTarget.style.backgroundColor = 'transparent'; }}
           >
-            <HiOutlineLogout className="w-5 h-5" />
+            <HiOutlineLogout className="w-4 h-4" />
           </button>
         </div>
       </div>

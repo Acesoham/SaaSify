@@ -8,19 +8,19 @@ import api from '../services/api';
 function StatCard({ icon: Icon, iconBg, label, value, change, changeColor, delay = 0 }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay }}
-      className="glass-card p-5"
+      className="bg-white border border-[#E5E7E0] rounded-xl p-5 shadow-[0_1px_3px_rgba(23,24,32,0.06)] hover:shadow-[0_4px_12px_rgba(23,24,32,0.08)] transition-shadow"
     >
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between">
         <div>
-          <p className="text-dark-300 text-sm">{label}</p>
-          <p className="text-3xl font-bold text-white mt-1">{value}</p>
+          <p className="text-[#6B7068] text-sm">{label}</p>
+          <p className="text-3xl font-bold text-[#171820] mt-1.5">{value}</p>
           {change && <p className={`text-xs mt-2 ${changeColor}`}>{change}</p>}
         </div>
-        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${iconBg}`}>
-          <Icon className="w-6 h-6 text-white" />
+        <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${iconBg}`}>
+          <Icon className="w-5 h-5" />
         </div>
       </div>
     </motion.div>
@@ -61,63 +61,117 @@ export default function DashboardPage() {
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-white">Dashboard</h1>
-        <p className="text-dark-300 mt-1">Welcome back, {user?.name || 'User'}</p>
+        <h1 className="text-2xl font-bold text-[#171820]">Dashboard</h1>
+        <p className="text-[#6B7068] text-sm mt-1">Welcome back, {user?.name || 'User'}</p>
       </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon={HiOutlineCheckCircle} iconBg="bg-primary-500" label="Total Tasks" value={s.totalTasks ?? 0} change={s.totalTasks > 0 ? 'All time' : 'Create your first task'} changeColor="text-dark-400" delay={0} />
-        <StatCard icon={HiOutlineClock} iconBg="bg-accent-cyan" label="In Progress" value={s.inProgress ?? 0} delay={0.05} />
-        <StatCard icon={HiOutlineTrendingUp} iconBg="bg-accent-green" label="Completed" value={s.completed ?? 0} delay={0.1} />
-        <StatCard icon={HiOutlineExclamation} iconBg="bg-accent-red" label="Urgent" value={s.urgent ?? 0} delay={0.15} />
+        <StatCard
+          icon={HiOutlineCheckCircle}
+          iconBg="bg-[#EFF9D4]"
+          label="Total Tasks"
+          value={s.totalTasks ?? 0}
+          change={s.totalTasks > 0 ? 'All time' : 'Create your first task'}
+          changeColor="text-[#6B7068]"
+          delay={0}
+        />
+        <StatCard
+          icon={HiOutlineClock}
+          iconBg="bg-[#EFF9D4]"
+          label="In Progress"
+          value={s.inProgress ?? 0}
+          delay={0.05}
+        />
+        <StatCard
+          icon={HiOutlineTrendingUp}
+          iconBg="bg-[#287D48]/10"
+          label="Completed"
+          value={s.completed ?? 0}
+          delay={0.1}
+        />
+        <StatCard
+          icon={HiOutlineExclamation}
+          iconBg="bg-[#C43D3D]/10"
+          label="Urgent"
+          value={s.urgent ?? 0}
+          delay={0.15}
+        />
       </div>
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Task Completion Trend */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="glass-card p-6">
-          <h3 className="text-white font-semibold text-lg">Task Completion</h3>
-          <p className="text-dark-400 text-sm mb-4">Last 7 days</p>
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="bg-white border border-[#E5E7E0] rounded-xl p-6 shadow-[0_1px_3px_rgba(23,24,32,0.06)]"
+        >
+          <h3 className="text-[#171820] font-semibold text-base">Task Completion</h3>
+          <p className="text-[#6B7068] text-xs mt-0.5 mb-5">Last 7 days</p>
           {chartData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={250}>
+            <ResponsiveContainer width="100%" height={230}>
               <AreaChart data={chartData}>
                 <defs>
                   <linearGradient id="taskGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#6C5CE7" stopOpacity={0.4} />
-                    <stop offset="95%" stopColor="#6C5CE7" stopOpacity={0} />
+                    <stop offset="5%"  stopColor="#C4F13B" stopOpacity={0.35} />
+                    <stop offset="95%" stopColor="#C4F13B" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1e1e3f" />
-                <XAxis dataKey="day" stroke="#7575a3" fontSize={12} />
-                <YAxis stroke="#7575a3" fontSize={12} />
-                <Tooltip contentStyle={{ backgroundColor: '#171730', border: '1px solid #2d2d5e', borderRadius: '12px', color: '#fff' }} />
-                <Area type="monotone" dataKey="tasks" stroke="#6C5CE7" fill="url(#taskGradient)" strokeWidth={2} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#F1F3ED" vertical={false} />
+                <XAxis dataKey="day" stroke="#969A92" fontSize={11} axisLine={false} tickLine={false} dy={6} />
+                <YAxis stroke="#969A92" fontSize={11} axisLine={false} tickLine={false} dx={-6} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#fff',
+                    border: '1px solid #E5E7E0',
+                    borderRadius: '10px',
+                    color: '#171820',
+                    boxShadow: '0 4px 12px rgba(23,24,32,0.1)',
+                    fontSize: '12px',
+                  }}
+                />
+                <Area type="monotone" dataKey="tasks" stroke="#C4F13B" fill="url(#taskGradient)" strokeWidth={2.5} dot={false} />
               </AreaChart>
             </ResponsiveContainer>
           ) : (
-            <div className="flex items-center justify-center h-[250px] text-dark-400 text-sm">
+            <div className="flex items-center justify-center h-[230px] text-[#969A92] text-sm bg-[#F8F9F5] rounded-lg border-2 border-dashed border-[#E5E7E0]">
               No task data yet. Create tasks to see trends.
             </div>
           )}
         </motion.div>
 
         {/* Team Productivity */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="glass-card p-6">
-          <h3 className="text-white font-semibold text-lg">Team Productivity</h3>
-          <p className="text-dark-400 text-sm mb-4">Tasks completed by user</p>
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="bg-white border border-[#E5E7E0] rounded-xl p-6 shadow-[0_1px_3px_rgba(23,24,32,0.06)]"
+        >
+          <h3 className="text-[#171820] font-semibold text-base">Team Productivity</h3>
+          <p className="text-[#6B7068] text-xs mt-0.5 mb-5">Tasks completed by user</p>
           {teamProductivity.length > 0 ? (
-            <ResponsiveContainer width="100%" height={250}>
+            <ResponsiveContainer width="100%" height={230}>
               <BarChart data={teamProductivity}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1e1e3f" />
-                <XAxis dataKey="name" stroke="#7575a3" fontSize={12} />
-                <YAxis stroke="#7575a3" fontSize={12} />
-                <Tooltip contentStyle={{ backgroundColor: '#171730', border: '1px solid #2d2d5e', borderRadius: '12px', color: '#fff' }} />
-                <Bar dataKey="completedTasks" fill="#8c75ff" radius={[6, 6, 0, 0]} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#F1F3ED" vertical={false} />
+                <XAxis dataKey="name" stroke="#969A92" fontSize={11} axisLine={false} tickLine={false} dy={6} />
+                <YAxis stroke="#969A92" fontSize={11} axisLine={false} tickLine={false} dx={-6} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#fff',
+                    border: '1px solid #E5E7E0',
+                    borderRadius: '10px',
+                    color: '#171820',
+                    boxShadow: '0 4px 12px rgba(23,24,32,0.1)',
+                    fontSize: '12px',
+                  }}
+                />
+                <Bar dataKey="completedTasks" fill="#C4F13B" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div className="flex items-center justify-center h-[250px] text-dark-400 text-sm">
+            <div className="flex items-center justify-center h-[230px] text-[#969A92] text-sm bg-[#F8F9F5] rounded-lg border-2 border-dashed border-[#E5E7E0]">
               No completions yet. Finish tasks to see productivity.
             </div>
           )}

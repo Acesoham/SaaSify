@@ -5,25 +5,30 @@ export default function TopBar() {
   const { user } = useAuthStore();
 
   return (
-    <header className="h-16 bg-dark-900/40 backdrop-blur-md border-b border-dark-700/40 flex items-center justify-between px-6 sticky top-0 z-30">
+    <header className="h-14 bg-white border-b border-[#E5E7E0] flex items-center justify-between px-6 sticky top-0 z-30">
       {/* Search */}
-      <div className="relative w-full max-w-md">
-        <HiOutlineSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-dark-400 w-5 h-5" />
+      <div className="relative w-full max-w-sm">
+        <HiOutlineSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-[#969A92] w-4 h-4" />
         <input
           type="text"
           placeholder="Search tasks, projects..."
-          className="w-full bg-dark-800/40 border border-dark-600/30 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-dark-400 focus:outline-none focus:border-primary-500/40 transition-all"
+          className="w-full bg-[#F8F9F5] border border-[#E5E7E0] rounded-lg pl-9 pr-4 py-2 text-sm text-[#171820] placeholder-[#969A92] focus:outline-none focus:ring-2 focus:ring-[#C4F13B]/40 focus:border-[#C4F13B] transition-all"
         />
       </div>
 
       {/* Right Section */}
-      <div className="flex items-center gap-4 ml-4">
-        <button className="relative p-2 rounded-xl hover:bg-dark-700/50 transition-all">
-          <HiOutlineBell className="w-5 h-5 text-dark-300" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-accent-red rounded-full"></span>
+      <div className="flex items-center gap-3 ml-4">
+        <button className="relative p-2 rounded-lg hover:bg-[#F1F3ED] transition-all">
+          <HiOutlineBell className="w-5 h-5 text-[#6B7068]" />
+          <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-[#C43D3D] rounded-full"></span>
         </button>
-        <div className="flex items-center gap-2 bg-primary-500/20 px-3 py-1.5 rounded-lg">
-          <span className="text-primary-300 text-sm font-medium">Admin</span>
+
+        {/* User badge */}
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#F1F3ED] border border-[#E5E7E0]">
+          <div className="w-6 h-6 rounded-full bg-[#C4F13B] flex items-center justify-center text-[10px] font-bold text-[#171820]">
+            {user?.name?.charAt(0) || 'U'}
+          </div>
+          <span className="text-[#171820] text-sm font-medium">{user?.name?.split(' ')[0] || 'User'}</span>
         </div>
       </div>
     </header>

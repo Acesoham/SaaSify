@@ -27,55 +27,76 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-dark-950 flex items-center justify-center p-4">
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary-500/10 rounded-full blur-[128px]"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-accent-cyan/10 rounded-full blur-[128px]"></div>
+    <div className="min-h-screen flex" style={{ backgroundColor: '#F8F9F5' }}>
+      {/* Left decorative panel */}
+      <div className="hidden lg:flex w-1/2 flex-col justify-between p-12" style={{ backgroundColor: '#171820' }}>
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#C4F13B' }}>
+            <span className="font-black text-sm" style={{ color: '#171820' }}>S</span>
+          </div>
+          <span className="text-white font-bold text-lg">SaaSify</span>
+        </div>
+
+        <div>
+          <blockquote className="text-white text-2xl font-semibold leading-snug mb-4">
+            "SaaSify helped our team ship 3x faster with better visibility into every task and project."
+          </blockquote>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-[#C4F13B] flex items-center justify-center text-[#171820] font-bold text-sm">A</div>
+            <div>
+              <p className="text-white text-sm font-semibold">Alex Chen</p>
+              <p className="text-[#969A92] text-xs">CTO at Nexus Labs</p>
+            </div>
+          </div>
+        </div>
+
+        <p className="text-[#4A4D45] text-xs">© 2026 SaaSify. All rights reserved.</p>
       </div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="relative w-full max-w-md"
-      >
-        <div className="glass-card p-8">
-          {/* Logo */}
-          <div className="flex items-center gap-2.5 mb-8 justify-center">
-            <div className="w-10 h-10 bg-gradient-to-br from-primary-400 to-primary-600 rounded-xl flex items-center justify-center">
-              <span className="text-white font-bold text-lg">S</span>
+      {/* Right form panel */}
+      <div className="flex-1 flex items-center justify-center p-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="w-full max-w-sm"
+        >
+          {/* Mobile logo */}
+          <div className="flex items-center gap-2.5 mb-8 lg:hidden">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#171820' }}>
+              <span className="font-black text-sm" style={{ color: '#C4F13B' }}>S</span>
             </div>
-            <span className="text-white font-bold text-2xl tracking-tight">SaaSify</span>
+            <span className="text-[#171820] font-bold text-lg">SaaSify</span>
           </div>
 
-          <h1 className="text-2xl font-bold text-white text-center mb-2">Welcome back</h1>
-          <p className="text-dark-400 text-center mb-8">Sign in to your account</p>
+          <h1 className="text-2xl font-bold text-[#171820] mb-1">Welcome back</h1>
+          <p className="text-[#6B7068] text-sm mb-7">Sign in to your account to continue</p>
 
           {error && (
-            <div className="bg-accent-red/10 border border-accent-red/30 rounded-xl p-3 mb-4">
-              <p className="text-accent-red text-sm text-center">{error}</p>
+            <div className="bg-[#FEF2F2] border border-[#C43D3D]/30 rounded-lg p-3 mb-5">
+              <p className="text-[#C43D3D] text-sm">{error}</p>
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="text-dark-300 text-sm block mb-1.5">Email</label>
+              <label className="text-[#171820] text-sm font-medium block mb-1.5">Email</label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                
+                placeholder="you@company.com"
                 className="input-field"
                 required
               />
             </div>
             <div>
-              <label className="text-dark-300 text-sm block mb-1.5">Password</label>
+              <label className="text-[#171820] text-sm font-medium block mb-1.5">Password</label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-               
+                placeholder="••••••••"
                 className="input-field"
                 required
               />
@@ -86,37 +107,34 @@ export default function LoginPage() {
               whileHover={{ scale: 1.01 }}
               whileTap={{ scale: 0.99 }}
               disabled={isLoading}
-              className="w-full bg-gradient-to-r from-primary-500 to-primary-600 text-white font-semibold py-3 rounded-xl hover:from-primary-600 hover:to-primary-700 transition-all disabled:opacity-50"
+              className="w-full btn-primary justify-center py-2.5 disabled:opacity-50"
             >
-              {isLoading ? 'Signing in...' : 'Sign In'}
+              {isLoading ? 'Signing in…' : 'Sign In'}
             </motion.button>
           </form>
 
-          <div className="mt-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-dark-600/50"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-dark-950/80 text-dark-400">Or continue with</span>
-              </div>
-            </div>
-
-            <button
-              onClick={handleGoogleLogin}
-              className="mt-6 w-full flex items-center justify-center gap-2 bg-dark-800 hover:bg-dark-700 text-white font-medium py-3 rounded-xl border border-dark-600/50 transition-colors"
-            >
-              <FcGoogle className="text-xl" />
-              Google
-            </button>
+          <div className="my-5 flex items-center gap-3">
+            <div className="flex-1 h-px bg-[#E5E7E0]" />
+            <span className="text-[#969A92] text-xs">or continue with</span>
+            <div className="flex-1 h-px bg-[#E5E7E0]" />
           </div>
 
-          <p className="text-dark-400 text-sm text-center mt-6">
+          <button
+            onClick={handleGoogleLogin}
+            className="w-full flex items-center justify-center gap-2.5 bg-white border border-[#E5E7E0] text-[#171820] font-medium py-2.5 rounded-lg hover:bg-[#F1F3ED] hover:border-[#C4F13B]/50 transition-all"
+          >
+            <FcGoogle className="text-xl" />
+            Continue with Google
+          </button>
+
+          <p className="text-[#6B7068] text-sm text-center mt-6">
             Don't have an account?{' '}
-            <Link to="/signup" className="text-primary-400 hover:underline">Create one</Link>
+            <Link to="/signup" className="text-[#171820] font-semibold hover:text-[#C4F13B] transition-colors">
+              Create one
+            </Link>
           </p>
-        </div>
-      </motion.div>
+        </motion.div>
+      </div>
     </div>
   );
 }

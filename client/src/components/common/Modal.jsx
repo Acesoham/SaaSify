@@ -21,25 +21,26 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' })
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            className="absolute inset-0"
+            style={{ backgroundColor: 'rgba(23,24,32,0.45)', backdropFilter: 'blur(4px)' }}
           />
 
-          {/* Modal */}
+          {/* Modal Panel */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            initial={{ opacity: 0, scale: 0.96, y: 16 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className={`relative w-full ${sizeClasses[size]} bg-dark-800 border border-dark-600/40 rounded-2xl shadow-2xl shadow-black/30 overflow-hidden`}
+            exit={{ opacity: 0, scale: 0.96, y: 16 }}
+            transition={{ type: 'spring', damping: 28, stiffness: 350 }}
+            className={`relative w-full ${sizeClasses[size]} bg-white rounded-2xl shadow-[0_20px_60px_rgba(23,24,32,0.15)] border border-[#E5E7E0] overflow-hidden`}
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-dark-600/30">
-              <h2 className="text-white font-semibold text-lg">{title}</h2>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#E5E7E0]">
+              <h2 className="text-[#171820] font-semibold text-base">{title}</h2>
               <button
                 onClick={onClose}
-                className="p-1.5 rounded-lg hover:bg-dark-700/50 text-dark-400 hover:text-white transition-all"
+                className="p-1.5 rounded-lg hover:bg-[#F1F3ED] text-[#6B7068] hover:text-[#171820] transition-all"
               >
-                <HiOutlineX className="w-5 h-5" />
+                <HiOutlineX className="w-4 h-4" />
               </button>
             </div>
 

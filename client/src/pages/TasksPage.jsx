@@ -28,60 +28,70 @@ import Modal from '../components/common/Modal';
 import EmptyState from '../components/common/EmptyState';
 
 const priorityConfig = {
-  low: { label: 'low', class: 'badge-low', dot: 'bg-dark-400' },
-  medium: { label: 'medium', class: 'badge-medium', dot: 'bg-accent-blue' },
-  high: { label: 'high', class: 'badge-high', dot: 'bg-accent-orange' },
-  urgent: { label: 'urgent', class: 'badge-urgent', dot: 'bg-accent-red' },
+  low:    { label: 'low',    class: 'badge-low',    dot: 'bg-[#969A92]' },
+  medium: { label: 'medium', class: 'badge-medium', dot: 'bg-[#3478B9]' },
+  high:   { label: 'high',   class: 'badge-high',   dot: 'bg-[#A96612]' },
+  urgent: { label: 'urgent', class: 'badge-urgent', dot: 'bg-[#C43D3D]' },
 };
 
 const columnConfig = {
-  backlog: { label: 'Backlog', dot: 'bg-dark-400' },
-  todo: { label: 'To Do', dot: 'bg-accent-orange' },
-  'in-progress': { label: 'In Progress', dot: 'bg-accent-blue' },
-  review: { label: 'Review', dot: 'bg-accent-yellow' },
-  done: { label: 'Done', dot: 'bg-accent-green' },
+  backlog:     { label: 'Backlog',     dot: 'bg-[#969A92]',  header: 'bg-[#F8F9F5]' },
+  todo:        { label: 'To Do',       dot: 'bg-[#A96612]',  header: 'bg-[#FFF8EF]' },
+  'in-progress':{ label: 'In Progress',dot: 'bg-[#3478B9]',  header: 'bg-[#EFF5FF]' },
+  review:      { label: 'Review',      dot: 'bg-[#6B4DA0]',  header: 'bg-[#F4EFFF]' },
+  done:        { label: 'Done',        dot: 'bg-[#287D48]',  header: 'bg-[#EDFCF3]' },
 };
 
 function TaskCard({ task, index, isOverlay, ...props }) {
   const p = priorityConfig[task.priority] || priorityConfig.medium;
-  const deadlineStr = task.deadline ? new Date(task.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : null;
+  const deadlineStr = task.deadline
+    ? new Date(task.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    : null;
 
   return (
     <motion.div
-      initial={!isOverlay ? { opacity: 0, y: 10 } : {}}
+      initial={!isOverlay ? { opacity: 0, y: 8 } : {}}
       animate={!isOverlay ? { opacity: 1, y: 0 } : {}}
-      transition={{ delay: index * 0.05 }}
-      whileHover={!isOverlay ? { y: -2, scale: 1.01 } : {}}
-      className={`bg-dark-800/90 border border-dark-600/40 rounded-xl p-4 cursor-grab active:cursor-grabbing hover:border-primary-500/40 transition-all ${isOverlay ? 'shadow-2xl shadow-primary-500/20 scale-105 opacity-90' : 'shadow-sm shadow-black/20'}`}
+      transition={{ delay: index * 0.04 }}
+      whileHover={!isOverlay ? { y: -1 } : {}}
+      className={`bg-white border border-[#E5E7E0] rounded-xl p-4 cursor-grab active:cursor-grabbing
+                  hover:border-[#C4F13B]/50 hover:shadow-[0_2px_8px_rgba(23,24,32,0.08)] transition-all
+                  ${isOverlay ? 'shadow-[0_8px_24px_rgba(23,24,32,0.15)] scale-[1.02] opacity-95' : ''}`}
       {...props}
     >
-      <div className="flex items-center justify-between mb-2">
-        <div className={`w-2.5 h-2.5 rounded-full ${p.dot} shadow-[0_0_8px_rgba(0,0,0,0.3)]`}></div>
-        <span className={`${p.class} text-[10px] font-bold uppercase tracking-wider`}>{p.label}</span>
+      <div className="flex items-center justify-between mb-2.5">
+        <div className={`w-2 h-2 rounded-full ${p.dot}`} />
+        <span className={`${p.class} text-[10px] font-semibold uppercase tracking-wide`}>{p.label}</span>
       </div>
 
-      <h4 className="text-white font-semibold text-sm mb-1.5 line-clamp-2 leading-snug">{task.title}</h4>
-      <p className="text-dark-400 text-xs mb-4 line-clamp-2 leading-relaxed">{task.description}</p>
+      <h4 className="text-[#171820] font-semibold text-sm mb-1 line-clamp-2 leading-snug">{task.title}</h4>
+      <p className="text-[#6B7068] text-xs mb-3 line-clamp-2 leading-relaxed">{task.description}</p>
 
       {task.tags?.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mb-4">
+        <div className="flex flex-wrap gap-1 mb-3">
           {task.tags.map((tag) => (
-            <span key={tag} className="text-[10px] font-medium bg-dark-700/80 text-dark-200 px-2 py-0.5 rounded-md border border-white/5">{tag}</span>
+            <span key={tag} className="text-[10px] font-medium bg-[#F1F3ED] text-[#6B7068] px-2 py-0.5 rounded-md">
+              {tag}
+            </span>
           ))}
         </div>
       )}
 
-      <div className="flex items-center justify-between mt-auto pt-3 border-t border-white/5">
-        <div className="flex -space-x-2">
+      <div className="flex items-center justify-between pt-2.5 border-t border-[#F1F3ED]">
+        <div className="flex -space-x-1.5">
           {(task.assignees || []).slice(0, 3).map((a, i) => (
-            <div key={i} title={a.name} className="w-7 h-7 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 border-2 border-dark-800 flex items-center justify-center text-[10px] text-white font-black overflow-hidden shadow-sm">
-              {a.avatar ? <img src={a.avatar} alt={a.name} /> : (a.name?.charAt(0) || '?')}
+            <div
+              key={i}
+              title={a.name}
+              className="w-6 h-6 rounded-full bg-[#EFF9D4] border-2 border-white flex items-center justify-center text-[9px] text-[#171820] font-bold overflow-hidden"
+            >
+              {a.avatar ? <img src={a.avatar} alt={a.name} className="w-full h-full object-cover" /> : (a.name?.charAt(0) || '?')}
             </div>
           ))}
         </div>
-        <div className="flex items-center gap-3 text-dark-400 text-[10px] font-medium">
-          {task.commentCount > 0 && <span className="flex items-center gap-1">💬 {task.commentCount}</span>}
-          {deadlineStr && <span className="flex items-center gap-1">📅 {deadlineStr}</span>}
+        <div className="flex items-center gap-2.5 text-[#969A92] text-[10px]">
+          {task.commentCount > 0 && <span className="flex items-center gap-0.5">💬 {task.commentCount}</span>}
+          {deadlineStr && <span className="flex items-center gap-0.5">📅 {deadlineStr}</span>}
         </div>
       </div>
     </motion.div>
@@ -98,23 +108,17 @@ function SortableTaskCard({ task, index }) {
     isDragging,
   } = useSortable({
     id: task._id,
-    data: {
-      type: 'Task',
-      task,
-    },
+    data: { type: 'Task', task },
   });
 
-  const style = {
-    transition,
-    transform: CSS.Translate.toString(transform),
-  };
+  const style = { transition, transform: CSS.Translate.toString(transform) };
 
   if (isDragging) {
     return (
       <div
         ref={setNodeRef}
         style={style}
-        className="bg-dark-800/20 border-2 border-dashed border-primary-500/20 rounded-xl h-32 w-full"
+        className="bg-[#EFF9D4]/40 border-2 border-dashed border-[#C4F13B]/40 rounded-xl h-28 w-full"
       />
     );
   }
@@ -130,21 +134,25 @@ function KanbanColumn({ status, tasks, onAddTask }) {
   const col = columnConfig[status] || columnConfig.todo;
 
   return (
-    <div className="flex-1 min-w-[300px] flex flex-col h-full bg-dark-900/30 rounded-2xl border border-white/5 p-4">
-      <div className="flex items-center justify-between mb-5 px-1">
-        <div className="flex items-center gap-3">
-          <div className={`w-3 h-3 rounded-full ${col.dot} shadow-[0_0_10px_rgba(0,0,0,0.2)]`}></div>
-          <h3 className="text-white font-bold text-sm tracking-tight">{col.label}</h3>
-          <span className="bg-dark-800/80 text-dark-300 text-[10px] font-black px-2.5 py-0.5 rounded-full border border-white/5">
+    <div className="flex-1 min-w-[280px] flex flex-col h-full bg-[#F8F9F5] rounded-xl border border-[#E5E7E0]">
+      {/* Column header */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-[#E5E7E0] rounded-t-xl">
+        <div className="flex items-center gap-2.5">
+          <div className={`w-2 h-2 rounded-full ${col.dot}`} />
+          <h3 className="text-[#171820] font-semibold text-sm">{col.label}</h3>
+          <span className="bg-white text-[#6B7068] text-[10px] font-semibold px-2 py-0.5 rounded-full border border-[#E5E7E0]">
             {tasks.length}
           </span>
         </div>
-        <button onClick={() => onAddTask(status)} className="p-1.5 rounded-lg hover:bg-dark-700 text-dark-400 hover:text-white transition-all">
-          <HiOutlinePlus className="w-4.5 h-4.5" />
+        <button
+          onClick={() => onAddTask(status)}
+          className="p-1 rounded-lg hover:bg-[#E5E7E0] text-[#969A92] hover:text-[#171820] transition-all"
+        >
+          <HiOutlinePlus className="w-4 h-4" />
         </button>
       </div>
 
-      <div className="flex-1 space-y-4 min-h-[500px]">
+      <div className="flex-1 space-y-3 p-3 min-h-[460px]">
         <SortableContext
           id={status}
           items={tasks.map(t => t._id)}
@@ -154,13 +162,13 @@ function KanbanColumn({ status, tasks, onAddTask }) {
             <SortableTaskCard key={task._id} task={task} index={idx} />
           ))}
         </SortableContext>
-        
+
         {tasks.length === 0 && (
-          <div className="border-2 border-dashed border-dark-800 rounded-2xl p-8 text-center flex flex-col items-center justify-center bg-dark-950/20">
-            <div className="w-10 h-10 rounded-full bg-dark-800/50 flex items-center justify-center mb-2">
-              <HiOutlineClipboardList className="w-5 h-5 text-dark-500" />
+          <div className="border-2 border-dashed border-[#E5E7E0] rounded-xl p-6 text-center flex flex-col items-center">
+            <div className="w-8 h-8 rounded-full bg-[#F1F3ED] flex items-center justify-center mb-2">
+              <HiOutlineClipboardList className="w-4 h-4 text-[#969A92]" />
             </div>
-            <p className="text-dark-500 text-[11px] font-medium">No tasks in {col.label.toLowerCase()}</p>
+            <p className="text-[#969A92] text-xs">No tasks in {col.label.toLowerCase()}</p>
           </div>
         )}
       </div>
@@ -190,7 +198,6 @@ export default function TasksPage() {
     fetchProjects();
     fetchKanban(selectedProjectId);
 
-    // Socket Setup
     if (accessToken && currentTenant) {
       socketService.connect(accessToken);
       socketService.joinTenant(currentTenant._id);
@@ -265,8 +272,8 @@ export default function TasksPage() {
 
     if (!activeCol || !overCol) return;
 
-    const overIndex = overId in kanban 
-      ? kanban[overCol].length 
+    const overIndex = overId in kanban
+      ? kanban[overCol].length
       : kanban[overCol].findIndex(i => i._id === overId);
 
     if (activeId !== overId || activeCol !== overCol) {
@@ -276,7 +283,6 @@ export default function TasksPage() {
         newOrder: overIndex,
       });
 
-      // Notify others
       socketService.emit('task:move', {
         taskId: activeId,
         fromStatus: activeCol,
@@ -324,48 +330,51 @@ export default function TasksPage() {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in h-[calc(100vh-140px)] flex flex-col">
+    <div className="space-y-5 animate-fade-in h-[calc(100vh-100px)] flex flex-col">
+      {/* Header */}
       <div className="flex items-center justify-between shrink-0">
         <div>
-          <h1 className="text-3xl font-black text-white tracking-tight">Tasks</h1>
-          <p className="text-dark-400 text-sm mt-1">Manage and track your team's deliverables</p>
+          <h1 className="text-2xl font-bold text-[#171820]">Tasks</h1>
+          <p className="text-[#6B7068] text-sm mt-0.5">Manage and track your team's deliverables</p>
         </div>
         <div className="flex items-center gap-3">
-          <select 
-            value={selectedProjectId} 
+          <select
+            value={selectedProjectId}
             onChange={(e) => setSelectedProjectId(e.target.value)}
-            className="bg-dark-800/50 border border-dark-600/30 text-dark-200 text-sm rounded-xl px-4 py-2 hover:border-primary-500/30 transition-all outline-none"
+            className="bg-white border border-[#E5E7E0] text-[#171820] text-sm rounded-lg px-3 py-2 hover:border-[#C4F13B]/50 transition-all outline-none focus:ring-2 focus:ring-[#C4F13B]/30"
           >
             <option value="">All Projects</option>
             {projects.map(p => <option key={p._id} value={p._id}>{p.name}</option>)}
           </select>
           <motion.button
-            whileHover={{ scale: 1.02, y: -1 }}
+            whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => setShowModal(true)}
             className="btn-primary"
           >
-            <HiOutlinePlus className="w-5 h-5" />
+            <HiOutlinePlus className="w-4 h-4" />
             New Task
           </motion.button>
         </div>
       </div>
 
       {/* View Toggle */}
-      <div className="flex items-center gap-1 bg-dark-800/40 p-1 rounded-xl w-fit shrink-0 backdrop-blur-md border border-white/5">
+      <div className="flex items-center gap-1 bg-white p-1 rounded-lg w-fit shrink-0 border border-[#E5E7E0]">
         {[
-          { id: 'kanban', icon: HiOutlineViewGrid, label: 'Kanban' },
-          { id: 'list', icon: HiOutlineViewList, label: 'List' },
-          { id: 'calendar', icon: HiOutlineCalendar, label: 'Calendar' },
+          { id: 'kanban',   icon: HiOutlineViewGrid,  label: 'Kanban' },
+          { id: 'list',     icon: HiOutlineViewList,   label: 'List' },
+          { id: 'calendar', icon: HiOutlineCalendar,   label: 'Calendar' },
         ].map((v) => (
           <button
             key={v.id}
             onClick={() => setView(v.id)}
-            className={`flex items-center gap-2 px-5 py-2 rounded-lg text-xs font-bold transition-all ${
-              view === v.id ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/20' : 'text-dark-400 hover:text-dark-200'
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-md text-xs font-semibold transition-all ${
+              view === v.id
+                ? 'bg-[#C4F13B] text-[#171820] shadow-sm'
+                : 'text-[#6B7068] hover:text-[#171820] hover:bg-[#F1F3ED]'
             }`}
           >
-            <v.icon className="w-4 h-4" /> {v.label}
+            <v.icon className="w-3.5 h-3.5" /> {v.label}
           </button>
         ))}
       </div>
@@ -376,7 +385,11 @@ export default function TasksPage() {
           <EmptyState
             icon={HiOutlineClipboardList}
             title="No tasks yet"
-            description={projects.length === 0 ? 'Create a project first, then add tasks to it.' : 'Start adding tasks to your projects to organize your workflow.'}
+            description={
+              projects.length === 0
+                ? 'Create a project first, then add tasks to it.'
+                : 'Start adding tasks to your projects to organize your workflow.'
+            }
             actionLabel={projects.length > 0 ? '+ Create Task' : '+ Create a Project First'}
             onAction={() => {
               if (projects.length > 0) setShowModal(true);
@@ -393,7 +406,7 @@ export default function TasksPage() {
               onDragEnd={handleDragEnd}
               modifiers={[restrictToWindowEdges]}
             >
-              <div className="flex gap-6 h-full overflow-x-auto pb-6 scroll-smooth custom-scrollbar">
+              <div className="flex gap-4 h-full overflow-x-auto pb-4 scroll-smooth">
                 {Object.entries(kanban).map(([status, tasks]) => (
                   <KanbanColumn key={status} status={status} tasks={tasks} onAddTask={handleAddTask} />
                 ))}
@@ -401,17 +414,15 @@ export default function TasksPage() {
 
               <DragOverlay dropAnimation={{
                 sideEffects: defaultDropAnimationSideEffects({
-                  styles: { active: { opacity: '0.5' } },
+                  styles: { active: { opacity: '0.4' } },
                 }),
               }}>
-                {activeTask ? (
-                  <TaskCard task={activeTask} isOverlay />
-                ) : null}
+                {activeTask ? <TaskCard task={activeTask} isOverlay /> : null}
               </DragOverlay>
             </DndContext>
           ) : (
-            <div className="glass-card p-12 text-center flex flex-col items-center justify-center">
-              <p className="text-dark-400 italic">List and Calendar views are coming soon...</p>
+            <div className="bg-white border border-[#E5E7E0] rounded-xl p-12 text-center">
+              <p className="text-[#969A92] text-sm">List and Calendar views are coming soon…</p>
             </div>
           )
         )}
@@ -421,7 +432,7 @@ export default function TasksPage() {
       <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Create New Task" size="lg">
         <form onSubmit={handleCreate} className="space-y-4">
           <div>
-            <label className="text-dark-300 text-sm block mb-1.5 font-medium">Title *</label>
+            <label className="text-[#6B7068] text-sm block mb-1.5 font-medium">Title *</label>
             <input
               type="text"
               value={formData.title}
@@ -434,7 +445,7 @@ export default function TasksPage() {
           </div>
 
           <div>
-            <label className="text-dark-300 text-sm block mb-1.5 font-medium">Description</label>
+            <label className="text-[#6B7068] text-sm block mb-1.5 font-medium">Description</label>
             <textarea
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -446,7 +457,7 @@ export default function TasksPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-dark-300 text-sm block mb-1.5 font-medium">Project *</label>
+              <label className="text-[#6B7068] text-sm block mb-1.5 font-medium">Project *</label>
               <select
                 value={formData.projectId}
                 onChange={(e) => setFormData({ ...formData, projectId: e.target.value })}
@@ -460,7 +471,7 @@ export default function TasksPage() {
               </select>
             </div>
             <div>
-              <label className="text-dark-300 text-sm block mb-1.5 font-medium">Status</label>
+              <label className="text-[#6B7068] text-sm block mb-1.5 font-medium">Status</label>
               <select
                 value={formData.status}
                 onChange={(e) => setFormData({ ...formData, status: e.target.value })}
@@ -475,7 +486,7 @@ export default function TasksPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-dark-300 text-sm block mb-1.5 font-medium">Priority</label>
+              <label className="text-[#6B7068] text-sm block mb-1.5 font-medium">Priority</label>
               <select
                 value={formData.priority}
                 onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
@@ -488,7 +499,7 @@ export default function TasksPage() {
               </select>
             </div>
             <div>
-              <label className="text-dark-300 text-sm block mb-1.5 font-medium">Tags</label>
+              <label className="text-[#6B7068] text-sm block mb-1.5 font-medium">Tags</label>
               <input
                 type="text"
                 value={formData.tags}
@@ -499,8 +510,12 @@ export default function TasksPage() {
             </div>
           </div>
 
-          <div className="flex gap-4 pt-4">
-            <button type="button" onClick={() => setShowModal(false)} className="flex-1 btn-ghost border border-dark-600/40 rounded-xl text-center justify-center font-bold">
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={() => setShowModal(false)}
+              className="flex-1 btn-secondary justify-center"
+            >
               Cancel
             </button>
             <motion.button
@@ -508,7 +523,7 @@ export default function TasksPage() {
               whileHover={{ scale: 1.01 }}
               whileTap={{ scale: 0.99 }}
               disabled={creating || !formData.title.trim() || !formData.projectId}
-              className="flex-1 btn-primary justify-center disabled:opacity-50 font-bold"
+              className="flex-1 btn-primary justify-center disabled:opacity-50"
             >
               {creating ? 'Creating...' : 'Create Task'}
             </motion.button>
