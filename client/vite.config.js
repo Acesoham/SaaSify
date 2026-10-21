@@ -7,6 +7,8 @@ export default defineConfig({
   // ── Dev server ──────────────────────────────────────────────────────────────
   server: {
     port: 5173,
+    host: true,              // bind to 0.0.0.0 so ngrok can reach it
+    allowedHosts: true,      // allow any tunnelled host (ngrok, etc.)
     proxy: {
       '/api': {
         target: 'http://127.0.0.1:5000',

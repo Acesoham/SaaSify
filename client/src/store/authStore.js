@@ -81,14 +81,19 @@ export const useAuthStore = create((set, get) => ({
   acceptInvite: async (token) => {
     set({ isLoading: true, error: null });
     try {
-      await api.post(`/auth/accept-invite/${token}`);
+      const membership = await api.post(`/auth/accept-invite/${token}`);
       
       // Re-fetch current user and memberships after accepting
       const { data } = await api.get('/tenants/my');
       const tenants = data.data;
+
+      // Find the tenant we just joined (last added = most recently joined)
+      const joinedTenantEntry = tenants[tenants.length - 1];
+      const currentTenant = joinedTenantEntry?.tenant || tenants[0]?.tenant || null;
       
       localStorage.setItem('saasify_tenants', JSON.stringify(tenants));
-      set({ tenants, isLoading: false });
+      localStorage.setItem('saasify_current_tenant', JSON.stringify(currentTenant));
+      set({ tenants, currentTenant, isLoading: false });
       return true;
     } catch (error) {
       set({ error: error.response?.data?.message || 'Failed to accept invitation', isLoading: false });

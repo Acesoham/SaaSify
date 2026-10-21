@@ -26,6 +26,7 @@ import { useAuthStore } from '../store/authStore';
 import socketService from '../services/socket';
 import Modal from '../components/common/Modal';
 import EmptyState from '../components/common/EmptyState';
+import { HiOutlineUserAdd, HiOutlineCheck, HiOutlineX, HiOutlineShieldCheck } from 'react-icons/hi';
 
 const priorityConfig = {
   low:    { label: 'low',    class: 'badge-low',    dot: 'bg-[#969A92]' },
@@ -178,7 +179,7 @@ function KanbanColumn({ status, tasks, onAddTask }) {
 
 export default function TasksPage() {
   const { kanban, fetchKanban, createTask, moveTask, setKanban } = useTaskStore();
-  const { projects, fetchProjects } = useProjectStore();
+  const { projects, fetchProjects, fetchProjectMembers, addMemberToProject, fetchTenantMembers, tenantMembers } = useProjectStore();
   const { accessToken, currentTenant } = useAuthStore();
   const [activeTask, setActiveTask] = useState(null);
   const [view, setView] = useState('kanban');
@@ -188,6 +189,9 @@ export default function TasksPage() {
   const [formData, setFormData] = useState({
     title: '', description: '', status: 'todo', priority: 'medium', projectId: '', tags: '',
   });
+  const [selectedAssignees, setSelectedAssignees] = useState([]);
+  const [projectMembers, setProjectMembers] = useState([]);
+  const [grantAccess, setGrantAccess] = useState({});
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -196,6 +200,7 @@ export default function TasksPage() {
 
   useEffect(() => {
     fetchProjects();
+    fetchTenantMembers();
     fetchKanban(selectedProjectId);
 
     if (accessToken && currentTenant) {
@@ -306,6 +311,14 @@ export default function TasksPage() {
 
   const handleAddTask = (status) => {
     setFormData({ ...formData, status, projectId: selectedProjectId });
+    setSelectedAssignees([]);
+    setGrantAccess({});
+    fetchTenantMembers(); // always refresh member list
+    if (selectedProjectId) {
+      fetchProjectMembers(selectedProjectId).then(setProjectMembers);
+    } else {
+      setProjectMembers([]);
+    }
     setShowModal(true);
   };
 
@@ -317,10 +330,20 @@ export default function TasksPage() {
       const taskData = {
         ...formData,
         tags: formData.tags ? formData.tags.split(',').map((t) => t.trim()).filter(Boolean) : [],
+        assignees: selectedAssignees.map((a) => a._id),
       };
       await createTask(taskData);
+
+      // Grant project access to assignees who don't have it yet
+      const grantPromises = selectedAssignees
+        .filter((a) => grantAccess[a._id])
+        .map((a) => addMemberToProject(formData.projectId, a._id).catch(() => {}));
+      await Promise.all(grantPromises);
+
       setShowModal(false);
       setFormData({ title: '', description: '', status: 'todo', priority: 'medium', projectId: '', tags: '' });
+      setSelectedAssignees([]);
+      setGrantAccess({});
       fetchKanban(selectedProjectId);
     } catch (err) {
       console.error('Failed to create task:', err);
@@ -328,6 +351,35 @@ export default function TasksPage() {
       setCreating(false);
     }
   };
+
+  // When the project changes in the modal, reload members
+  const handleModalProjectChange = async (projectId) => {
+    setFormData((prev) => ({ ...prev, projectId }));
+    setSelectedAssignees([]);
+    setGrantAccess({});
+    fetchTenantMembers(); // refresh in case new members joined
+    if (projectId) {
+      const members = await fetchProjectMembers(projectId);
+      setProjectMembers(members);
+    } else {
+      setProjectMembers([]);
+    }
+  };
+
+  const toggleAssignee = (member) => {
+    setSelectedAssignees((prev) => {
+      const exists = prev.find((a) => a._id === member._id);
+      if (exists) {
+        // Remove and clear grant access flag
+        setGrantAccess((g) => { const n = { ...g }; delete n[member._id]; return n; });
+        return prev.filter((a) => a._id !== member._id);
+      }
+      return [...prev, member];
+    });
+  };
+
+  // Returns true if the user is NOT yet a project member
+  const isNonMember = (userId) => !projectMembers.find((m) => m._id === userId);
 
   return (
     <div className="space-y-5 animate-fade-in h-[calc(100vh-100px)] flex flex-col">
@@ -346,10 +398,21 @@ export default function TasksPage() {
             <option value="">All Projects</option>
             {projects.map(p => <option key={p._id} value={p._id}>{p.name}</option>)}
           </select>
-          <motion.button
+        <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            onClick={() => setShowModal(true)}
+            onClick={() => {
+              setFormData({ ...formData, status: 'todo', projectId: selectedProjectId });
+              setSelectedAssignees([]);
+              setGrantAccess({});
+              fetchTenantMembers(); // always refresh member list
+              if (selectedProjectId) {
+                fetchProjectMembers(selectedProjectId).then(setProjectMembers);
+              } else {
+                setProjectMembers([]);
+              }
+              setShowModal(true);
+            }}
             className="btn-primary"
           >
             <HiOutlinePlus className="w-4 h-4" />
@@ -460,7 +523,7 @@ export default function TasksPage() {
               <label className="text-[#6B7068] text-sm block mb-1.5 font-medium">Project *</label>
               <select
                 value={formData.projectId}
-                onChange={(e) => setFormData({ ...formData, projectId: e.target.value })}
+                onChange={(e) => handleModalProjectChange(e.target.value)}
                 className="input-field"
                 required
               >
@@ -482,6 +545,117 @@ export default function TasksPage() {
                 ))}
               </select>
             </div>
+          </div>
+
+          {/* Assign To */}
+          <div>
+            <label className="text-[#6B7068] text-sm block mb-2 font-medium flex items-center gap-1.5">
+              <HiOutlineUserAdd className="w-4 h-4" /> Assign To
+            </label>
+
+            {!formData.projectId ? (
+              <div className="bg-[#F8F9F5] border border-dashed border-[#E5E7E0] rounded-xl p-3 text-center">
+                <p className="text-[#969A92] text-xs">Select a project first to see team members.</p>
+              </div>
+            ) : tenantMembers.filter(m => m.userId).length === 0 ? (
+              <div className="bg-[#F8F9F5] border border-dashed border-[#E5E7E0] rounded-xl p-3 text-center">
+                <p className="text-[#969A92] text-xs">No team members in this workspace yet.</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {/* Selected assignees — shown as removable chips */}
+                {selectedAssignees.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 pb-2 border-b border-[#F1F3ED]">
+                    {selectedAssignees.map((user) => (
+                      <div
+                        key={user._id}
+                        className="flex items-center gap-1.5 pl-1.5 pr-1 py-1 bg-[#C4F13B] rounded-lg text-xs font-semibold text-[#171820]"
+                      >
+                        <div className="w-5 h-5 rounded-full bg-[#171820]/10 flex items-center justify-center text-[9px] font-bold overflow-hidden flex-shrink-0">
+                          {user.avatar
+                            ? <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+                            : user.name?.charAt(0).toUpperCase()}
+                        </div>
+                        <span>{user.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => toggleAssignee(user)}
+                          className="w-4 h-4 rounded-full bg-[#171820]/15 hover:bg-[#171820]/30 flex items-center justify-center transition-all flex-shrink-0"
+                          title="Remove assignee"
+                        >
+                          <HiOutlineX className="w-2.5 h-2.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* All tenant members — click to add */}
+                <div className="flex flex-wrap gap-1.5 max-h-[100px] overflow-y-auto">
+                  {tenantMembers.map((m) => {
+                    const user = m.userId;
+                    if (!user) return null;
+                    const isSelected = selectedAssignees.some((a) => a._id === user._id);
+                    if (isSelected) return null; // already shown as chip above
+                    const notInProject = !projectMembers.some((pm) => {
+                      const pmId = pm._id || pm.userId?._id || pm.userId;
+                      return pmId === user._id;
+                    });
+                    return (
+                      <button
+                        key={user._id}
+                        type="button"
+                        onClick={() => toggleAssignee(user)}
+                        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[#E5E7E0] bg-white text-xs font-medium text-[#6B7068] hover:border-[#C4F13B] hover:bg-[#F8FFED] hover:text-[#171820] transition-all"
+                      >
+                        <div className="w-5 h-5 rounded-full bg-[#EFF9D4] flex items-center justify-center text-[9px] font-bold overflow-hidden flex-shrink-0">
+                          {user.avatar
+                            ? <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+                            : user.name?.charAt(0).toUpperCase()}
+                        </div>
+                        <span>{user.name}</span>
+                        {notInProject && (
+                          <span className="text-[9px] bg-orange-100 text-orange-600 px-1 py-0.5 rounded">No project access</span>
+                        )}
+                        <HiOutlinePlus className="w-3 h-3 text-[#C4F13B]" />
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Grant workstation access for assignees not in project */}
+                {selectedAssignees.filter((a) => {
+                  return !projectMembers.some((pm) => {
+                    const pmId = pm._id || pm.userId?._id || pm.userId;
+                    return pmId === a._id;
+                  });
+                }).length > 0 && (
+                  <div className="mt-2 space-y-1.5">
+                    <p className="text-[#6B7068] text-xs font-medium flex items-center gap-1.5">
+                      <HiOutlineShieldCheck className="w-3.5 h-3.5 text-orange-500" />
+                      Grant project access to:
+                    </p>
+                    {selectedAssignees
+                      .filter((a) => !projectMembers.some((pm) => {
+                        const pmId = pm._id || pm.userId?._id || pm.userId;
+                        return pmId === a._id;
+                      }))
+                      .map((a) => (
+                        <label key={a._id} className="flex items-center gap-2 p-2 bg-orange-50 border border-orange-200/70 rounded-lg cursor-pointer hover:bg-orange-100 transition-all">
+                          <input
+                            type="checkbox"
+                            checked={!!grantAccess[a._id]}
+                            onChange={(e) => setGrantAccess((g) => ({ ...g, [a._id]: e.target.checked }))}
+                            className="w-3.5 h-3.5 accent-[#C4F13B]"
+                          />
+                          <span className="text-xs font-medium text-[#171820]">{a.name}</span>
+                          <span className="text-[10px] text-orange-600 ml-auto">will be added to this project</span>
+                        </label>
+                      ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">

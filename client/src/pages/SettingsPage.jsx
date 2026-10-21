@@ -372,7 +372,7 @@ export default function SettingsPage() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
-            style={{ backgroundColor: 'rgba(23,24,32,0.45)', backdropFilter: 'blur(4px)' }}
+            style={{ backgroundColor: 'transparent' }}
             onClick={(e) => { if (e.target === e.currentTarget) handleCloseInviteModal(); }}
           >
             <motion.div

@@ -65,4 +65,7 @@ router.post('/', authenticate, tenantScope, rbac('admin', 'member'), validate(pr
 router.put('/:id', authenticate, tenantScope, rbac('admin', 'member'), validate(projectSchema), projectController.update);
 router.delete('/:id', authenticate, tenantScope, rbac('admin'), projectController.remove);
 
+router.get('/:id/members', authenticate, tenantScope, projectController.getMembers);
+router.post('/:id/members', authenticate, tenantScope, rbac('admin', 'member'), projectController.addMember);
+
 export default router;

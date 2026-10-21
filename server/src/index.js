@@ -23,6 +23,7 @@ import githubRoutes from './routes/github.routes.js';
 import appRoutes from './routes/app.routes.js';
 import deploymentRoutes from './routes/deployment.routes.js';
 import webhookRoutes from './routes/webhook.routes.js';
+import notificationRoutes from './routes/notification.routes.js';
 
 const app = express();
 const httpServer = createServer(app);
@@ -44,9 +45,24 @@ global.io = io;
 // Security middleware
 app.use(helmet());
 app.use(cors({
-  origin: config.clientUrl,
+  origin: (origin, callback) => {
+    // Allow local dev, configured CLIENT_URL, and any ngrok tunnel
+    const allowed = [
+      config.clientUrl,
+      'http://localhost:5173',
+      'http://127.0.0.1:5173',
+    ];
+    if (!origin || allowed.includes(origin) || /https?:\/\/.*\.ngrok(|-free)\.app$/.test(origin) || /https?:\/\/.*\.ngrok\.io$/.test(origin)) {
+      callback(null, true);
+    } else {
+      callback(null, true); // allow all in dev — tighten in production
+    }
+  },
   credentials: true,
 }));
+
+// Trust proxy for ngrok / reverse proxies
+app.set('trust proxy', 1);
 
 // Rate limiting
 const limiter = rateLimit({
@@ -54,6 +70,7 @@ const limiter = rateLimit({
   max: 100,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false }, // disable strict X-Forwarded-For validation (needed for ngrok)
   message: { success: false, message: 'Too many requests, please try again later.' },
 });
 app.use('/api/', limiter);
@@ -80,6 +97,7 @@ app.use('/api/tenants', tenantRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // ─── PaaS Platform Routes ─────────────────────────────────────────────────────
 // Webhooks MUST be registered before any global body parsers

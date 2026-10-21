@@ -104,6 +104,26 @@ export const useProjectStore = create((set) => ({
     }
   },
 
+  fetchProjectMembers: async (projectId) => {
+    try {
+      const { data } = await api.get(`/projects/${projectId}/members`);
+      return data.data;
+    } catch (err) {
+      console.error('Failed to fetch project members:', err);
+      return [];
+    }
+  },
+
+  addMemberToProject: async (projectId, userId) => {
+    try {
+      const { data } = await api.post(`/projects/${projectId}/members`, { userId });
+      return data.data;
+    } catch (err) {
+      console.error('Failed to add member to project:', err);
+      throw err;
+    }
+  },
+
   createProject: async (projectData) => {
     const { data } = await api.post('/projects', projectData);
     set((state) => ({ projects: [data.data, ...state.projects] }));

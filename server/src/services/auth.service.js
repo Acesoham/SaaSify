@@ -3,8 +3,10 @@ import crypto from 'crypto';
 import User from '../models/User.js';
 import Tenant from '../models/Tenant.js';
 import Membership from '../models/Membership.js';
+import Notification from '../models/Notification.js';
 import config from '../config/env.js';
 import { AppError } from '../middleware/errorHandler.js';
+import { emailService } from './email.service.js';
 
 export const authService = {
   generateAccessToken(userId) {
@@ -168,6 +170,40 @@ export const authService = {
       invitedBy,
     });
 
+    // Get inviter info and tenant name for the email/notification
+    const [inviter, tenant] = await Promise.all([
+      User.findById(invitedBy).select('name'),
+      Tenant.findById(tenantId).select('name'),
+    ]);
+
+    const inviteLink = `${process.env.CLIENT_URL}/invite/${inviteToken}`;
+    const inviterName = inviter?.name || 'A teammate';
+    const tenantName = tenant?.name || 'a workspace';
+
+    // Send invite email (non-blocking — don't fail invite if email fails)
+    emailService.sendInviteEmail({
+      toEmail: email,
+      inviterName,
+      tenantName,
+      role: role || 'member',
+      inviteLink,
+    }).catch((err) => console.error('[Invite] Email error:', err.message));
+
+    // Create in-app notification for the invited user
+    await Notification.create({
+      userId: user._id,
+      type: 'invite',
+      title: `You've been invited to join ${tenantName}`,
+      message: `${inviterName} invited you to join "${tenantName}" as a ${role || 'member'}.`,
+      meta: {
+        inviteToken,
+        tenantId,
+        tenantName,
+        inviterName,
+        role: role || 'member',
+      },
+    });
+
     return { inviteToken, userId: user._id };
   },
 
@@ -183,6 +219,12 @@ export const authService = {
     await membership.save();
 
     await Tenant.findByIdAndUpdate(membership.tenantId, { $inc: { memberCount: 1 } });
+
+    // Mark the corresponding invite notification as read
+    await Notification.findOneAndUpdate(
+      { userId: membership.userId, type: 'invite', 'meta.inviteToken': token },
+      { read: true }
+    ).catch(() => {});
 
     return membership;
   },

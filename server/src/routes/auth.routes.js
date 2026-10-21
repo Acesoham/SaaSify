@@ -159,6 +159,6 @@ router.post('/invite', authenticate, tenantScope, rbac('admin'), validate(invite
  *         description: Invite accepted
  */
 router.get('/invite/:token', authController.getInviteDetails);
-router.post('/accept-invite/:token', authController.acceptInvite);
+router.post('/accept-invite/:token', authController.acceptInvite); // no auth required — token IS the credential
 
 export default router;

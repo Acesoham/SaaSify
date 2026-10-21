@@ -22,7 +22,7 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' })
             exit={{ opacity: 0 }}
             onClick={onClose}
             className="absolute inset-0"
-            style={{ backgroundColor: 'rgba(23,24,32,0.45)', backdropFilter: 'blur(4px)' }}
+            style={{ backgroundColor: 'transparent' }}
           />
 
           {/* Modal Panel */}

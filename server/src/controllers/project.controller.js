@@ -1,5 +1,7 @@
 import { projectService } from '../services/project.service.js';
 import ActivityLog from '../models/ActivityLog.js';
+import Project from '../models/Project.js';
+import Membership from '../models/Membership.js';
 
 export const projectController = {
   async getAll(req, res, next) {
@@ -72,6 +74,49 @@ export const projectController = {
       });
 
       res.json({ success: true, message: 'Project deleted' });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async getMembers(req, res, next) {
+    try {
+      const project = await Project.findOne({ _id: req.params.id, tenantId: req.tenantId })
+        .populate('members', 'name email avatar');
+      if (!project) return res.status(404).json({ success: false, message: 'Project not found' });
+      res.json({ success: true, data: project.members });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async addMember(req, res, next) {
+    try {
+      const { userId } = req.body;
+      if (!userId) return res.status(400).json({ success: false, message: 'userId is required' });
+
+      // Verify user is a tenant member
+      const membership = await Membership.findOne({ userId, tenantId: req.tenantId, inviteStatus: 'accepted' });
+      if (!membership) return res.status(400).json({ success: false, message: 'User is not a tenant member' });
+
+      const project = await Project.findOneAndUpdate(
+        { _id: req.params.id, tenantId: req.tenantId },
+        { $addToSet: { members: userId } },
+        { new: true }
+      ).populate('members', 'name email avatar');
+
+      if (!project) return res.status(404).json({ success: false, message: 'Project not found' });
+
+      await ActivityLog.create({
+        tenantId: req.tenantId,
+        userId: req.userId,
+        action: 'project.member_added',
+        entityType: 'project',
+        entityId: project._id,
+        metadata: { projectName: project.name, addedUserId: userId },
+      });
+
+      res.json({ success: true, data: project.members });
     } catch (error) {
       next(error);
     }
