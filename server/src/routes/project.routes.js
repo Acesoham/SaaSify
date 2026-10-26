@@ -4,7 +4,7 @@ import { authenticate } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenantScope.js';
 import { rbac } from '../middleware/rbac.js';
 import { validate } from '../middleware/validate.js';
-import { projectSchema } from '../validators/schemas.js';
+import { projectSchema, projectUpdateSchema } from '../validators/schemas.js';
 
 const router = Router();
 
@@ -62,10 +62,12 @@ router.get('/:id', authenticate, tenantScope, projectController.getById);
  */
 router.post('/', authenticate, tenantScope, rbac('admin', 'member'), validate(projectSchema), projectController.create);
 
-router.put('/:id', authenticate, tenantScope, rbac('admin', 'member'), validate(projectSchema), projectController.update);
+router.put('/:id', authenticate, tenantScope, rbac('admin', 'member'), validate(projectUpdateSchema), projectController.update);
 router.delete('/:id', authenticate, tenantScope, rbac('admin'), projectController.remove);
 
 router.get('/:id/members', authenticate, tenantScope, projectController.getMembers);
 router.post('/:id/members', authenticate, tenantScope, rbac('admin', 'member'), projectController.addMember);
+router.post('/:id/members/:userId/github-access', authenticate, tenantScope, rbac('admin', 'member'), projectController.grantMemberRepoAccess);
+router.delete('/:id/members/:userId', authenticate, tenantScope, rbac('admin', 'member'), projectController.removeMember);
 
 export default router;

@@ -2,15 +2,19 @@ import Task from '../models/Task.js';
 import Project from '../models/Project.js';
 import Membership from '../models/Membership.js';
 import ActivityLog from '../models/ActivityLog.js';
+import { getAccessibleProjectIds } from './project.service.js';
 
 export const analyticsService = {
-  async getDashboardStats(tenantId) {
+  async getDashboardStats(tenantId, userId, userRole) {
+    const projectIds = await getAccessibleProjectIds(tenantId, userId, userRole);
+    const taskScope = { tenantId, ...(projectIds ? { projectId: { $in: projectIds } } : {}) };
+    const projectScope = { tenantId, ...(projectIds ? { _id: { $in: projectIds } } : {}) };
     const [totalTasks, inProgress, completed, urgent, totalProjects, totalMembers] = await Promise.all([
-      Task.countDocuments({ tenantId }),
-      Task.countDocuments({ tenantId, status: 'in-progress' }),
-      Task.countDocuments({ tenantId, status: 'done' }),
-      Task.countDocuments({ tenantId, priority: 'urgent' }),
-      Project.countDocuments({ tenantId }),
+      Task.countDocuments(taskScope),
+      Task.countDocuments({ ...taskScope, status: 'in-progress' }),
+      Task.countDocuments({ ...taskScope, status: 'done' }),
+      Task.countDocuments({ ...taskScope, priority: 'urgent' }),
+      Project.countDocuments(projectScope),
       Membership.countDocuments({ tenantId, inviteStatus: 'accepted' }),
     ]);
 
@@ -21,7 +25,7 @@ export const analyticsService = {
     const completionTrend = await Task.aggregate([
       {
         $match: {
-          tenantId: { $eq: tenantId },
+          ...taskScope,
           createdAt: { $gte: sevenDaysAgo },
         },
       },
@@ -40,7 +44,7 @@ export const analyticsService = {
     // Team productivity
     const teamProductivity = await Task.aggregate([
       {
-        $match: { tenantId: { $eq: tenantId }, status: 'done' },
+        $match: { ...taskScope, status: 'done' },
       },
       { $unwind: '$assignees' },
       {
@@ -70,7 +74,7 @@ export const analyticsService = {
 
     // Priority distribution
     const priorityDistribution = await Task.aggregate([
-      { $match: { tenantId: { $eq: tenantId } } },
+      { $match: taskScope },
       { $group: { _id: '$priority', count: { $sum: 1 } } },
     ]);
 
@@ -82,14 +86,17 @@ export const analyticsService = {
     };
   },
 
-  async getProductivityMetrics(tenantId) {
-    const totalTasks = await Task.countDocuments({ tenantId });
-    const completedTasks = await Task.countDocuments({ tenantId, status: 'done' });
+  async getProductivityMetrics(tenantId, userId, userRole) {
+    const projectIds = await getAccessibleProjectIds(tenantId, userId, userRole);
+    const taskScope = { tenantId, ...(projectIds ? { projectId: { $in: projectIds } } : {}) };
+    const projectScope = { tenantId, ...(projectIds ? { _id: { $in: projectIds } } : {}) };
+    const totalTasks = await Task.countDocuments(taskScope);
+    const completedTasks = await Task.countDocuments({ ...taskScope, status: 'done' });
     const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
     // Average task completion time
     const completedWithTime = await Task.find({
-      tenantId,
+      ...taskScope,
       status: 'done',
       completedAt: { $exists: true },
     }).select('createdAt completedAt');
@@ -103,13 +110,13 @@ export const analyticsService = {
     }
 
     // Active projects
-    const activeProjects = await Project.countDocuments({ tenantId, status: 'active' });
+    const activeProjects = await Project.countDocuments({ ...projectScope, status: 'active' });
 
     // Team velocity (tasks completed this week)
     const weekAgo = new Date();
     weekAgo.setDate(weekAgo.getDate() - 7);
     const velocity = await Task.countDocuments({
-      tenantId,
+      ...taskScope,
       status: 'done',
       completedAt: { $gte: weekAgo },
     });
@@ -122,8 +129,18 @@ export const analyticsService = {
     };
   },
 
-  async getRecentActivity(tenantId, limit = 20) {
-    return ActivityLog.find({ tenantId })
+  async getRecentActivity(tenantId, limit = 20, userId, userRole) {
+    const query = { tenantId };
+    const projectIds = await getAccessibleProjectIds(tenantId, userId, userRole);
+    if (projectIds) {
+      const taskIds = await Task.distinct('_id', { tenantId, projectId: { $in: projectIds } });
+      query.$or = [
+        { entityType: 'project', entityId: { $in: projectIds } },
+        { entityType: 'task', entityId: { $in: taskIds } },
+        { entityType: 'comment', 'metadata.taskId': { $in: taskIds } },
+      ];
+    }
+    return ActivityLog.find(query)
       .populate('userId', 'name email avatar')
       .sort({ createdAt: -1 })
       .limit(limit);

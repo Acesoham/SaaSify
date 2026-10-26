@@ -23,7 +23,7 @@ const typeConfig = {
 };
 
 export default function TopBar() {
-  const { user, acceptInvite, fetchUser } = useAuthStore();
+  const { user, acceptInvite, fetchUser, tenants, currentTenant, setCurrentTenant } = useAuthStore();
   const navigate = useNavigate();
 
   const [showNotifs, setShowNotifs] = useState(false);
@@ -182,7 +182,26 @@ export default function TopBar() {
                       return (
                         <div
                           key={notif._id}
-                          onClick={() => !notif.read && markRead(notif._id)}
+                          onClick={async () => {
+                            if (!notif.read) await markRead(notif._id);
+                            const isTaskNotification = notif.type === 'task_assigned' || Boolean(notif.meta?.taskId);
+                            if (notif.type === 'project_added' || isTaskNotification) {
+                              const destination = notif.type === 'project_added' ? '/projects' : '/tasks';
+                              const targetTenant = tenants.find((entry) =>
+                                String(entry.tenant?._id) === String(notif.meta?.tenantId)
+                              )?.tenant;
+
+                              setShowNotifs(false);
+                              if (targetTenant && String(targetTenant._id) !== String(currentTenant?._id)) {
+                                setCurrentTenant(targetTenant);
+                                window.location.assign(destination);
+                              } else if (isTaskNotification) {
+                                window.location.assign(destination);
+                              } else {
+                                navigate(destination);
+                              }
+                            }
+                          }}
                           className={`flex gap-3 px-4 py-3.5 transition-all ${
                             !notif.read ? 'bg-[#FAFFEE] hover:bg-[#F5FFDB]' : 'hover:bg-[#F8F9F5]'
                           }`}

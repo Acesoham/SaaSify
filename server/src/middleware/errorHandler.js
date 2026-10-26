@@ -4,6 +4,10 @@ import config from '../config/env.js';
 export const errorHandler = (err, req, res, _next) => {
   logger.error(err.message, { stack: err.stack });
 
+  if (err.type === 'entity.too.large') {
+    return res.status(413).json({ success: false, message: 'Request body is too large.' });
+  }
+
   // Mongoose validation error
   if (err.name === 'ValidationError') {
     const errors = Object.values(err.errors).map((e) => e.message);

@@ -1,4 +1,5 @@
 import { NavLink, Link, useLocation } from 'react-router-dom';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useAuthStore } from '../../store/authStore';
 import {
@@ -24,8 +25,16 @@ const navItems = [
 ];
 
 export default function Sidebar() {
-  const { user, currentTenant, logout } = useAuthStore();
+  const { user, currentTenant, tenants, setCurrentTenant, logout } = useAuthStore();
   const location = useLocation();
+  const [tenantMenuOpen, setTenantMenuOpen] = useState(false);
+  const tenantEntries = (tenants || []).filter((entry) => entry.tenant);
+
+  const selectTenant = (tenant) => {
+    setCurrentTenant(tenant);
+    setTenantMenuOpen(false);
+    if (tenant._id !== currentTenant?._id) window.location.reload();
+  };
 
   return (
     <aside className="fixed left-0 top-0 h-screen w-[240px] flex flex-col z-40"
@@ -41,23 +50,47 @@ export default function Sidebar() {
       </Link>
 
       {/* Tenant Selector */}
-      <div className="mx-4 mb-5 p-3 rounded-xl cursor-pointer transition-all"
-           style={{ backgroundColor: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}>
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold"
-               style={{ backgroundColor: '#C4F13B', color: '#171820' }}>
-            {currentTenant?.name?.charAt(0) || 'A'}
+      <div className="relative mx-4 mb-5">
+        <button
+          type="button"
+          aria-label="Switch workspace"
+          aria-expanded={tenantMenuOpen}
+          disabled={tenantEntries.length < 2}
+          onClick={() => setTenantMenuOpen((open) => !open)}
+          className="w-full p-3 rounded-xl text-left transition-all disabled:cursor-default"
+          style={{ backgroundColor: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold"
+                 style={{ backgroundColor: '#C4F13B', color: '#171820' }}>
+              {currentTenant?.name?.charAt(0) || 'A'}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-white text-sm font-semibold truncate">
+                {currentTenant?.name || 'Select Org'}
+              </p>
+              <p className="text-xs" style={{ color: '#969A92' }}>
+                {currentTenant?.memberCount || 0} members
+              </p>
+            </div>
+            <HiOutlineChevronDown className="w-4 h-4 flex-shrink-0" style={{ color: '#969A92' }} />
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-white text-sm font-semibold truncate">
-              {currentTenant?.name || 'Select Org'}
-            </p>
-            <p className="text-xs" style={{ color: '#969A92' }}>
-              {currentTenant?.memberCount || 0} members
-            </p>
+        </button>
+        {tenantMenuOpen && tenantEntries.length > 1 && (
+          <div className="absolute left-0 right-0 top-full z-50 mt-2 rounded-xl border border-[#2E3038] bg-[#20212A] p-1 shadow-xl">
+            {tenantEntries.map(({ tenant, role }) => (
+              <button
+                key={tenant._id}
+                type="button"
+                onClick={() => selectTenant(tenant)}
+                className={`w-full rounded-lg px-3 py-2 text-left transition-colors ${tenant._id === currentTenant?._id ? 'bg-white/10' : 'hover:bg-white/5'}`}
+              >
+                <span className="block truncate text-sm font-medium text-white">{tenant.name}</span>
+                <span className="block text-xs capitalize text-[#969A92]">{role} · {tenant.memberCount || 0} members</span>
+              </button>
+            ))}
           </div>
-          <HiOutlineChevronDown className="w-4 h-4 flex-shrink-0" style={{ color: '#969A92' }} />
-        </div>
+        )}
       </div>
 
       {/* Navigation */}

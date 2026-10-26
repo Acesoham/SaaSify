@@ -35,7 +35,7 @@ export const tenantController = {
   async getMembers(req, res, next) {
     try {
       const members = await Membership.find({ tenantId: req.tenantId, inviteStatus: 'accepted' })
-        .populate('userId', 'name email avatar');
+        .populate('userId', 'name email avatar githubConnected');
       res.json({ success: true, data: members });
     } catch (error) {
       next(error);

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import api from '../services/api';
 
-export const useTaskStore = create((set) => ({
+export const useTaskStore = create((set, get) => ({
   tasks: [],
   kanban: { backlog: [], todo: [], 'in-progress': [], review: [], done: [] },
   isLoading: false,
@@ -47,6 +47,7 @@ export const useTaskStore = create((set) => ({
   },
 
   moveTask: async (taskId, { fromStatus, toStatus, newOrder }) => {
+    const previousKanban = get().kanban;
     // Optimistic update
     set((state) => {
       const sourceCol = [...state.kanban[fromStatus]];
@@ -72,7 +73,7 @@ export const useTaskStore = create((set) => ({
       await api.put(`/tasks/${taskId}`, { status: toStatus, order: newOrder });
     } catch (err) {
       console.error('Failed to update task position:', err);
-      // Revert or refresh on error
+      set({ kanban: previousKanban });
     }
   },
 
@@ -115,13 +116,28 @@ export const useProjectStore = create((set) => ({
   },
 
   addMemberToProject: async (projectId, userId) => {
-    try {
-      const { data } = await api.post(`/projects/${projectId}/members`, { userId });
-      return data.data;
-    } catch (err) {
-      console.error('Failed to add member to project:', err);
-      throw err;
-    }
+    const { data } = await api.post(`/projects/${projectId}/members`, { userId });
+    set((state) => ({
+      projects: state.projects.map((project) => project._id === projectId
+        ? { ...project, members: data.data }
+        : project),
+    }));
+    return { members: data.data, githubAccess: data.githubAccess };
+  },
+
+  removeMemberFromProject: async (projectId, userId) => {
+    const { data } = await api.delete(`/projects/${projectId}/members/${userId}`);
+    set((state) => ({
+      projects: state.projects.map((project) => project._id === projectId
+        ? { ...project, members: data.data }
+        : project),
+    }));
+    return { members: data.data, githubAccess: data.githubAccess };
+  },
+
+  grantRepoAccessToProjectMember: async (projectId, userId) => {
+    const { data } = await api.post(`/projects/${projectId}/members/${userId}/github-access`);
+    return data.data;
   },
 
   createProject: async (projectData) => {
@@ -135,7 +151,7 @@ export const useProjectStore = create((set) => ({
     set((state) => ({
       projects: state.projects.map((p) => (p._id === projectId ? data.data : p)),
     }));
-    return data.data;
+    return { project: data.data, githubAccess: data.githubAccess || [] };
   },
 
   deleteProject: async (projectId) => {

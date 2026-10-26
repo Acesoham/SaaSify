@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { taskController } from '../controllers/task.controller.js';
+import { taskSubmissionController } from '../controllers/taskSubmission.controller.js';
 import { authenticate } from '../middleware/auth.js';
 import { tenantScope } from '../middleware/tenantScope.js';
 import { rbac } from '../middleware/rbac.js';
@@ -46,6 +47,11 @@ router.get('/', authenticate, tenantScope, taskController.getAll);
  *         description: Kanban board data
  */
 router.get('/kanban', authenticate, tenantScope, taskController.getKanban);
+
+router.get('/:taskId/submissions', authenticate, tenantScope, taskSubmissionController.list);
+router.post('/:taskId/submissions', authenticate, tenantScope, taskSubmissionController.create);
+router.get('/submissions/:submissionId/files/:fileId', authenticate, tenantScope, taskSubmissionController.downloadFile);
+router.patch('/submissions/:submissionId/review', authenticate, tenantScope, rbac('admin'), taskSubmissionController.review);
 
 /**
  * @swagger

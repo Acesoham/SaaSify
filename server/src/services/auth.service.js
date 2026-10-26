@@ -53,7 +53,7 @@ export const authService = {
   },
 
   async login({ email, password }) {
-    const user = await User.findOne({ email }).select('+password');
+    const user = await User.findOne({ email }).select('+word');
     if (!user) {
       throw new AppError('Invalid email or password', 401);
     }

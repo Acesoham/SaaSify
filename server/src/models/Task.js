@@ -67,6 +67,16 @@ const taskSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    submissionCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    pendingSubmissionCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
   },
   {
     timestamps: true,

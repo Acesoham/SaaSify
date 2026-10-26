@@ -3,7 +3,7 @@ import { analyticsService } from '../services/analytics.service.js';
 export const analyticsController = {
   async getDashboard(req, res, next) {
     try {
-      const data = await analyticsService.getDashboardStats(req.tenantId);
+      const data = await analyticsService.getDashboardStats(req.tenantId, req.userId, req.userRole);
       res.json({ success: true, data });
     } catch (error) {
       next(error);
@@ -12,7 +12,7 @@ export const analyticsController = {
 
   async getProductivity(req, res, next) {
     try {
-      const data = await analyticsService.getProductivityMetrics(req.tenantId);
+      const data = await analyticsService.getProductivityMetrics(req.tenantId, req.userId, req.userRole);
       res.json({ success: true, data });
     } catch (error) {
       next(error);
@@ -21,7 +21,7 @@ export const analyticsController = {
 
   async getActivity(req, res, next) {
     try {
-      const data = await analyticsService.getRecentActivity(req.tenantId, Number(req.query.limit) || 20);
+      const data = await analyticsService.getRecentActivity(req.tenantId, Number(req.query.limit) || 20, req.userId, req.userRole);
       res.json({ success: true, data });
     } catch (error) {
       next(error);

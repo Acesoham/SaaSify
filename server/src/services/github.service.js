@@ -165,6 +165,30 @@ export const githubService = {
   },
 
   /**
+   * Invite a GitHub account to a repository with write access.
+   */
+  async addCollaborator(userId, repoFullName, username) {
+    const [owner, repo] = repoFullName.split('/');
+    if (!owner || !repo) throw new AppError('Invalid connected GitHub repository', 400);
+
+    const octokit = await getOctokitForUser(userId);
+    const response = await octokit.rest.repos.addCollaborator({ owner, repo, username });
+
+    return { invitationCreated: response.status === 201 };
+  },
+
+  /**
+   * Remove a GitHub account's repository access.
+   */
+  async removeCollaborator(userId, repoFullName, username) {
+    const [owner, repo] = repoFullName.split('/');
+    if (!owner || !repo) throw new AppError('Invalid connected GitHub repository', 400);
+
+    const octokit = await getOctokitForUser(userId);
+    await octokit.rest.repos.removeCollaborator({ owner, repo, username });
+  },
+
+  /**
    * Register a webhook on the user's repo.
    * Returns the webhook ID (store in App model for future deletion).
    */

@@ -25,6 +25,7 @@
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.7.0",
+    "ngrok": "^5.0.0-beta.2",
     "nodemailer": "^10.1.7",
     "simple-git": "^3.36.0",
     "socket.io": "^4.8.0",

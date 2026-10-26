@@ -23,9 +23,12 @@ export const projectSchema = z.object({
   status: z.enum(['active', 'archived', 'completed']).optional(),
   color: z.string().optional(),
   members: z.array(z.string()).optional(),
+  appId: z.string().nullable().optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
 });
+
+export const projectUpdateSchema = projectSchema.partial().omit({ members: true });
 
 export const taskSchema = z.object({
   title: z.string().min(1).max(300),

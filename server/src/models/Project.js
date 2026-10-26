@@ -34,6 +34,11 @@ const projectSchema = new mongoose.Schema(
         ref: 'User',
       },
     ],
+    appId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'App',
+      default: null,
+    },
     owner: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',

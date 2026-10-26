@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { useEffect, useState, useMemo } from 'react';
-import { HiOutlinePlus, HiOutlineFilter, HiOutlineViewGrid, HiOutlineViewList, HiOutlineCalendar, HiOutlineClipboardList } from 'react-icons/hi';
+import { HiOutlinePlus, HiOutlineFilter, HiOutlineViewGrid, HiOutlineViewList, HiOutlineCalendar, HiOutlineClipboardList, HiOutlineUpload, HiOutlineDownload, HiOutlineFolder, HiOutlineClock } from 'react-icons/hi';
 import {
   DndContext,
   DragOverlay,
@@ -26,7 +26,26 @@ import { useAuthStore } from '../store/authStore';
 import socketService from '../services/socket';
 import Modal from '../components/common/Modal';
 import EmptyState from '../components/common/EmptyState';
-import { HiOutlineUserAdd, HiOutlineCheck, HiOutlineX, HiOutlineShieldCheck } from 'react-icons/hi';
+import { HiOutlineUserAdd, HiOutlineCheck, HiOutlineX } from 'react-icons/hi';
+import api from '../services/api';
+
+const MAX_SUBMISSION_SIZE = 8 * 1024 * 1024;
+
+function formatFileSize(size) {
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+async function fileToBase64(file) {
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  let binary = '';
+  const chunkSize = 0x8000;
+  for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(offset, offset + chunkSize));
+  }
+  return btoa(binary);
+}
 
 const priorityConfig = {
   low:    { label: 'low',    class: 'badge-low',    dot: 'bg-[#969A92]' },
@@ -43,7 +62,7 @@ const columnConfig = {
   done:        { label: 'Done',        dot: 'bg-[#287D48]',  header: 'bg-[#EDFCF3]' },
 };
 
-function TaskCard({ task, index, isOverlay, ...props }) {
+function TaskCard({ task, index, isOverlay, canSubmit, isAdmin, onOpenSubmissions, ...props }) {
   const p = priorityConfig[task.priority] || priorityConfig.medium;
   const deadlineStr = task.deadline
     ? new Date(task.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
@@ -95,11 +114,27 @@ function TaskCard({ task, index, isOverlay, ...props }) {
           {deadlineStr && <span className="flex items-center gap-0.5">📅 {deadlineStr}</span>}
         </div>
       </div>
+
+      {!isOverlay && (canSubmit || (isAdmin && task.submissionCount > 0)) && (
+        <button
+          type="button"
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={(event) => {
+            event.stopPropagation();
+            onOpenSubmissions(task);
+          }}
+          className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg border border-[#E5E7E0] bg-[#F8F9F5] px-2.5 py-2 text-xs font-semibold text-[#171820] hover:border-[#C4F13B] hover:bg-[#F8FFED]"
+        >
+          {isAdmin && task.submissionCount > 0
+            ? <><HiOutlineCheck className="h-4 w-4" />{task.pendingSubmissionCount > 0 ? `Review work (${task.pendingSubmissionCount})` : `View submissions (${task.submissionCount})`}</>
+            : <><HiOutlineUpload className="h-4 w-4" />{task.pendingSubmissionCount > 0 ? 'Waiting for review' : task.status === 'done' ? 'View submission' : 'Submit work'}</>}
+        </button>
+      )}
     </motion.div>
   );
 }
 
-function SortableTaskCard({ task, index }) {
+function SortableTaskCard({ task, index, canManageTask, canSubmit, isAdmin, onOpenSubmissions }) {
   const {
     attributes,
     listeners,
@@ -110,6 +145,7 @@ function SortableTaskCard({ task, index }) {
   } = useSortable({
     id: task._id,
     data: { type: 'Task', task },
+    disabled: !canManageTask,
   });
 
   const style = { transition, transform: CSS.Translate.toString(transform) };
@@ -125,13 +161,13 @@ function SortableTaskCard({ task, index }) {
   }
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <TaskCard task={task} index={index} />
+    <div ref={setNodeRef} style={style} {...attributes} {...(canManageTask ? listeners : {})}>
+      <TaskCard task={task} index={index} canSubmit={canSubmit} isAdmin={isAdmin} onOpenSubmissions={onOpenSubmissions} />
     </div>
   );
 }
 
-function KanbanColumn({ status, tasks, onAddTask }) {
+function KanbanColumn({ status, tasks, onAddTask, canCreateTasks, canManageTask, canSubmitTask, isAdmin, onOpenSubmissions }) {
   const col = columnConfig[status] || columnConfig.todo;
 
   return (
@@ -145,12 +181,14 @@ function KanbanColumn({ status, tasks, onAddTask }) {
             {tasks.length}
           </span>
         </div>
-        <button
-          onClick={() => onAddTask(status)}
-          className="p-1 rounded-lg hover:bg-[#E5E7E0] text-[#969A92] hover:text-[#171820] transition-all"
-        >
-          <HiOutlinePlus className="w-4 h-4" />
-        </button>
+        {canCreateTasks && (
+          <button
+            onClick={() => onAddTask(status)}
+            className="p-1 rounded-lg hover:bg-[#E5E7E0] text-[#969A92] hover:text-[#171820] transition-all"
+          >
+            <HiOutlinePlus className="w-4 h-4" />
+          </button>
+        )}
       </div>
 
       <div className="flex-1 space-y-3 p-3 min-h-[460px]">
@@ -160,7 +198,15 @@ function KanbanColumn({ status, tasks, onAddTask }) {
           strategy={verticalListSortingStrategy}
         >
           {tasks.map((task, idx) => (
-            <SortableTaskCard key={task._id} task={task} index={idx} />
+            <SortableTaskCard
+              key={task._id}
+              task={task}
+              index={idx}
+              canManageTask={canManageTask(task)}
+              canSubmit={canSubmitTask(task)}
+              isAdmin={isAdmin}
+              onOpenSubmissions={onOpenSubmissions}
+            />
           ))}
         </SortableContext>
 
@@ -180,7 +226,27 @@ function KanbanColumn({ status, tasks, onAddTask }) {
 export default function TasksPage() {
   const { kanban, fetchKanban, createTask, moveTask, setKanban } = useTaskStore();
   const { projects, fetchProjects, fetchProjectMembers, addMemberToProject, fetchTenantMembers, tenantMembers } = useProjectStore();
-  const { accessToken, currentTenant } = useAuthStore();
+  const { user, accessToken, currentTenant, tenants } = useAuthStore();
+  const tenantRole = tenants.find((entry) => String(entry.tenant?._id) === String(currentTenant?._id))?.role;
+  const isAdmin = tenantRole === 'admin';
+  const canManageTasks = tenantRole === 'admin' || tenantRole === 'member';
+  const accessibleProjects = useMemo(() => {
+    const userId = String(user?._id || '');
+    return projects.filter((project) =>
+      isAdmin
+      || String(project.owner?._id || project.owner || '') === userId
+      || (project.members || []).some((member) => String(member._id || member) === userId)
+      || Object.values(kanban).flat().some((task) =>
+        String(task.projectId?._id || task.projectId || '') === String(project._id)
+      )
+    );
+  }, [projects, user?._id, kanban, isAdmin]);
+  const manageableProjects = useMemo(() => projects.filter((project) => {
+    const userId = String(user?._id || '');
+    return isAdmin
+      || String(project.owner?._id || project.owner || '') === userId
+      || (project.members || []).some((member) => String(member._id || member) === userId);
+  }), [projects, user?._id, isAdmin]);
   const [activeTask, setActiveTask] = useState(null);
   const [view, setView] = useState('kanban');
   const [showModal, setShowModal] = useState(false);
@@ -191,7 +257,17 @@ export default function TasksPage() {
   });
   const [selectedAssignees, setSelectedAssignees] = useState([]);
   const [projectMembers, setProjectMembers] = useState([]);
-  const [grantAccess, setGrantAccess] = useState({});
+  const [formError, setFormError] = useState('');
+  const [accessNotice, setAccessNotice] = useState('');
+  const [submissionTask, setSubmissionTask] = useState(null);
+  const [submissions, setSubmissions] = useState([]);
+  const [submissionsLoading, setSubmissionsLoading] = useState(false);
+  const [submissionFiles, setSubmissionFiles] = useState([]);
+  const [submissionNote, setSubmissionNote] = useState('');
+  const [submissionSaving, setSubmissionSaving] = useState(false);
+  const [submissionError, setSubmissionError] = useState('');
+  const [reviewComments, setReviewComments] = useState({});
+  const [reviewingSubmissionId, setReviewingSubmissionId] = useState(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -202,29 +278,43 @@ export default function TasksPage() {
     fetchProjects();
     fetchTenantMembers();
     fetchKanban(selectedProjectId);
+  }, [selectedProjectId, currentTenant?._id]);
 
-    if (accessToken && currentTenant) {
-      socketService.connect(accessToken);
-      socketService.joinTenant(currentTenant._id);
+  useEffect(() => {
+    if (!accessToken || !currentTenant) return undefined;
 
-      socketService.on('task:moved', (data) => {
-        if (!selectedProjectId || data.projectId === selectedProjectId) {
-          fetchKanban(selectedProjectId);
-        }
-      });
+    socketService.connect(accessToken);
+    const projectIds = selectedProjectId
+      ? [selectedProjectId]
+      : accessibleProjects.map((project) => project._id);
+    projectIds.forEach((projectId) => socketService.joinProject(projectId));
 
-      socketService.on('task:created', () => fetchKanban(selectedProjectId));
-      socketService.on('task:updated', () => fetchKanban(selectedProjectId));
-      socketService.on('task:deleted', () => fetchKanban(selectedProjectId));
-    }
+    const refreshBoard = () => fetchKanban(selectedProjectId);
+    const handleProjectAccessGranted = () => {
+      fetchProjects();
+      fetchKanban(selectedProjectId);
+    };
+    const handleProjectAccessRevoked = ({ projectId }) => {
+      fetchProjects();
+      if (selectedProjectId === projectId) setSelectedProjectId('');
+      else fetchKanban(selectedProjectId);
+    };
+
+    socketService.on('task:created', refreshBoard);
+    socketService.on('task:updated', refreshBoard);
+    socketService.on('task:deleted', refreshBoard);
+    socketService.on('project:access_granted', handleProjectAccessGranted);
+    socketService.on('project:access_revoked', handleProjectAccessRevoked);
 
     return () => {
-      socketService.off('task:moved');
-      socketService.off('task:created');
-      socketService.off('task:updated');
-      socketService.off('task:deleted');
+      projectIds.forEach((projectId) => socketService.leaveProject(projectId));
+      socketService.off('task:created', refreshBoard);
+      socketService.off('task:updated', refreshBoard);
+      socketService.off('task:deleted', refreshBoard);
+      socketService.off('project:access_granted', handleProjectAccessGranted);
+      socketService.off('project:access_revoked', handleProjectAccessRevoked);
     };
-  }, [selectedProjectId, accessToken, currentTenant]);
+  }, [accessibleProjects, selectedProjectId, accessToken, currentTenant, fetchKanban, fetchProjects]);
 
   const handleDragStart = (event) => {
     const { active } = event;
@@ -288,14 +378,7 @@ export default function TasksPage() {
         newOrder: overIndex,
       });
 
-      socketService.emit('task:move', {
-        taskId: activeId,
-        fromStatus: activeCol,
-        toStatus: overCol,
-        newOrder: overIndex,
-        tenantId: currentTenant._id,
-        projectId: selectedProjectId || (activeTask && activeTask.projectId),
-      });
+
     }
   };
 
@@ -308,14 +391,156 @@ export default function TasksPage() {
   };
 
   const hasAnyTasks = Object.values(kanban).some((col) => col.length > 0);
+  const hasPendingSubmission = Boolean(submissionTask)
+    && (Number(submissionTask.pendingSubmissionCount || 0) > 0 || submissions.some((item) => item.status === 'submitted'));
+
+  const canSubmitTask = (task) => (task.assignees || []).some((assignee) =>
+    String(assignee._id || assignee) === String(user?._id)
+  );
+
+  const canManageTask = (task) => {
+    if (!canManageTasks) return false;
+    if (isAdmin) return true;
+    const projectId = String(task.projectId?._id || task.projectId || '');
+    const project = projects.find((item) => String(item._id) === projectId);
+    const userId = String(user?._id || '');
+    return Boolean(project && (
+      String(project.owner?._id || project.owner || '') === userId
+      || (project.members || []).some((member) => String(member._id || member) === userId)
+    ));
+  };
+
+  const openSubmissions = async (task) => {
+    setSubmissionTask(task);
+    setSubmissions([]);
+    setSubmissionFiles([]);
+    setSubmissionNote('');
+    setReviewComments({});
+    setSubmissionError('');
+    setSubmissionsLoading(true);
+    try {
+      const { data } = await api.get(`/tasks/${task._id}/submissions`);
+      setSubmissions(data.data);
+    } catch (error) {
+      setSubmissionError(error.response?.data?.message || 'Could not load task submissions.');
+    } finally {
+      setSubmissionsLoading(false);
+    }
+  };
+
+  const handleSubmissionFiles = (event) => {
+    const incomingFiles = Array.from(event.target.files || []);
+    event.target.value = '';
+    const nextFiles = [...submissionFiles, ...incomingFiles];
+    const uniqueFiles = [...new Map(nextFiles.map((file) => [
+      `${file.webkitRelativePath || file.name}:${file.size}:${file.lastModified}`,
+      file,
+    ])).values()];
+    const totalSize = uniqueFiles.reduce((total, file) => total + file.size, 0);
+
+    if (uniqueFiles.length > 100) {
+      setSubmissionError('A submission can contain up to 100 files.');
+      return;
+    }
+    if (uniqueFiles.some((file) => file.size > 5 * 1024 * 1024)) {
+      setSubmissionError('Each file must be 5 MB or smaller.');
+      return;
+    }
+    if (totalSize > MAX_SUBMISSION_SIZE) {
+      setSubmissionError('The total submission size must be 8 MB or smaller.');
+      return;
+    }
+
+    setSubmissionError('');
+    setSubmissionFiles(uniqueFiles);
+  };
+
+  const submitWork = async (event) => {
+    event.preventDefault();
+    if (!submissionTask || submissionFiles.length === 0) return;
+
+    setSubmissionSaving(true);
+    setSubmissionError('');
+    try {
+      const files = await Promise.all(submissionFiles.map(async (file) => ({
+        name: file.name,
+        relativePath: file.webkitRelativePath || file.name,
+        mimeType: file.type || 'application/octet-stream',
+        size: file.size,
+        contentBase64: await fileToBase64(file),
+      })));
+      const { data } = await api.post(`/tasks/${submissionTask._id}/submissions`, {
+        files,
+        note: submissionNote,
+      });
+      setSubmissions((current) => [data.data, ...current]);
+      setSubmissionFiles([]);
+      setSubmissionNote('');
+      setSubmissionTask((current) => current ? {
+        ...current,
+        status: 'review',
+        submissionCount: (current.submissionCount || 0) + 1,
+        pendingSubmissionCount: 1,
+      } : current);
+      await fetchKanban(selectedProjectId);
+    } catch (error) {
+      setSubmissionError(error.response?.data?.message || 'Could not submit this work. Please try again.');
+    } finally {
+      setSubmissionSaving(false);
+    }
+  };
+
+  const reviewSubmission = async (submission, decision) => {
+    const comment = reviewComments[submission._id] || '';
+    if (decision === 'request_changes' && !comment.trim()) {
+      setSubmissionError('Add a comment explaining what needs to change.');
+      return;
+    }
+
+    setReviewingSubmissionId(submission._id);
+    setSubmissionError('');
+    try {
+      const { data } = await api.patch(`/tasks/submissions/${submission._id}/review`, { decision, comment });
+      setSubmissions((current) => current.map((item) => item._id === submission._id ? data.data : item));
+      setSubmissionTask((current) => current ? {
+        ...current,
+        status: data.task.status,
+        pendingSubmissionCount: data.task.pendingSubmissionCount,
+      } : current);
+      await fetchKanban(selectedProjectId);
+    } catch (error) {
+      setSubmissionError(error.response?.data?.message || 'Could not update this submission review.');
+    } finally {
+      setReviewingSubmissionId(null);
+    }
+  };
+
+  const downloadSubmissionFile = async (submissionId, file) => {
+    try {
+      const response = await api.get(
+        `/tasks/submissions/${submissionId}/files/${file._id}`,
+        { responseType: 'blob' }
+      );
+      const url = URL.createObjectURL(response.data);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = file.name;
+      link.click();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (error) {
+      setSubmissionError(error.response?.data?.message || 'Could not download this file.');
+    }
+  };
 
   const handleAddTask = (status) => {
-    setFormData({ ...formData, status, projectId: selectedProjectId });
+    const defaultProjectId = manageableProjects.some((project) => String(project._id) === String(selectedProjectId))
+      ? selectedProjectId
+      : '';
+    setFormData({ ...formData, status, projectId: defaultProjectId });
     setSelectedAssignees([]);
-    setGrantAccess({});
     fetchTenantMembers(); // always refresh member list
-    if (selectedProjectId) {
-      fetchProjectMembers(selectedProjectId).then(setProjectMembers);
+    if (defaultProjectId) {
+      fetchProjectMembers(defaultProjectId).then(setProjectMembers);
     } else {
       setProjectMembers([]);
     }
@@ -325,8 +550,24 @@ export default function TasksPage() {
   const handleCreate = async (e) => {
     e.preventDefault();
     if (!formData.title.trim() || !formData.projectId) return;
+
+    const projectMemberIds = new Set(projectMembers.map((member) =>
+      String(member._id || member.userId?._id || member.userId)
+    ));
+    const nonMembers = selectedAssignees.filter((assignee) => !projectMemberIds.has(String(assignee._id)));
+
     setCreating(true);
+    setFormError('');
     try {
+      const membershipResults = await Promise.all(
+        nonMembers.map((assignee) => addMemberToProject(formData.projectId, assignee._id))
+      );
+
+      const githubMessages = [...new Set(membershipResults
+        .map((result) => result.githubAccess)
+        .filter((access) => ['invited', 'github_not_connected', 'failed'].includes(access?.status))
+        .map((access) => access.message))];
+
       const taskData = {
         ...formData,
         tags: formData.tags ? formData.tags.split(',').map((t) => t.trim()).filter(Boolean) : [],
@@ -334,19 +575,15 @@ export default function TasksPage() {
       };
       await createTask(taskData);
 
-      // Grant project access to assignees who don't have it yet
-      const grantPromises = selectedAssignees
-        .filter((a) => grantAccess[a._id])
-        .map((a) => addMemberToProject(formData.projectId, a._id).catch(() => {}));
-      await Promise.all(grantPromises);
-
       setShowModal(false);
       setFormData({ title: '', description: '', status: 'todo', priority: 'medium', projectId: '', tags: '' });
       setSelectedAssignees([]);
-      setGrantAccess({});
+      setFormError('');
+      setAccessNotice(githubMessages.join(' '));
       fetchKanban(selectedProjectId);
     } catch (err) {
       console.error('Failed to create task:', err);
+      setFormError(err.response?.data?.message || 'Could not create the task. Please try again.');
     } finally {
       setCreating(false);
     }
@@ -356,7 +593,7 @@ export default function TasksPage() {
   const handleModalProjectChange = async (projectId) => {
     setFormData((prev) => ({ ...prev, projectId }));
     setSelectedAssignees([]);
-    setGrantAccess({});
+    setFormError('');
     fetchTenantMembers(); // refresh in case new members joined
     if (projectId) {
       const members = await fetchProjectMembers(projectId);
@@ -370,8 +607,6 @@ export default function TasksPage() {
     setSelectedAssignees((prev) => {
       const exists = prev.find((a) => a._id === member._id);
       if (exists) {
-        // Remove and clear grant access flag
-        setGrantAccess((g) => { const n = { ...g }; delete n[member._id]; return n; });
         return prev.filter((a) => a._id !== member._id);
       }
       return [...prev, member];
@@ -396,30 +631,28 @@ export default function TasksPage() {
             className="bg-white border border-[#E5E7E0] text-[#171820] text-sm rounded-lg px-3 py-2 hover:border-[#C4F13B]/50 transition-all outline-none focus:ring-2 focus:ring-[#C4F13B]/30"
           >
             <option value="">All Projects</option>
-            {projects.map(p => <option key={p._id} value={p._id}>{p.name}</option>)}
+            {accessibleProjects.map(p => <option key={p._id} value={p._id}>{p.name}</option>)}
           </select>
-        <motion.button
+        {canManageTasks && manageableProjects.length > 0 && <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            onClick={() => {
-              setFormData({ ...formData, status: 'todo', projectId: selectedProjectId });
-              setSelectedAssignees([]);
-              setGrantAccess({});
-              fetchTenantMembers(); // always refresh member list
-              if (selectedProjectId) {
-                fetchProjectMembers(selectedProjectId).then(setProjectMembers);
-              } else {
-                setProjectMembers([]);
-              }
-              setShowModal(true);
-            }}
+            onClick={() => handleAddTask('todo')}
             className="btn-primary"
           >
             <HiOutlinePlus className="w-4 h-4" />
             New Task
-          </motion.button>
+          </motion.button>}
         </div>
       </div>
+
+      {accessNotice && (
+        <div role="status" className="flex items-start justify-between gap-3 rounded-lg border border-[#E5E7E0] bg-[#F8F9F5] px-3 py-2 text-xs text-[#6B7068]">
+          <span>{accessNotice}</span>
+          <button type="button" onClick={() => setAccessNotice('')} aria-label="Dismiss GitHub access notice">
+            <HiOutlineX className="h-4 w-4" />
+          </button>
+        </div>
+      )}
 
       {/* View Toggle */}
       <div className="flex items-center gap-1 bg-white p-1 rounded-lg w-fit shrink-0 border border-[#E5E7E0]">
@@ -447,15 +680,15 @@ export default function TasksPage() {
         {!hasAnyTasks ? (
           <EmptyState
             icon={HiOutlineClipboardList}
-            title="No tasks yet"
+            title={accessibleProjects.length === 0 ? 'No project access yet' : 'No tasks yet'}
             description={
-              projects.length === 0
-                ? 'Create a project first, then add tasks to it.'
+              accessibleProjects.length === 0
+                ? `You are viewing ${currentTenant?.name || 'this workspace'}. Switch to the workspace that owns the project, then ask its admin to add you to that project.`
                 : 'Start adding tasks to your projects to organize your workflow.'
             }
-            actionLabel={projects.length > 0 ? '+ Create Task' : '+ Create a Project First'}
+            actionLabel={accessibleProjects.length > 0 ? '+ Create Task' : 'Go to Projects'}
             onAction={() => {
-              if (projects.length > 0) setShowModal(true);
+              if (accessibleProjects.length > 0) setShowModal(true);
               else window.location.href = '/projects';
             }}
           />
@@ -471,7 +704,17 @@ export default function TasksPage() {
             >
               <div className="flex gap-4 h-full overflow-x-auto pb-4 scroll-smooth">
                 {Object.entries(kanban).map(([status, tasks]) => (
-                  <KanbanColumn key={status} status={status} tasks={tasks} onAddTask={handleAddTask} />
+                  <KanbanColumn
+                    key={status}
+                    status={status}
+                    tasks={tasks}
+                    onAddTask={handleAddTask}
+                    canCreateTasks={canManageTasks && manageableProjects.length > 0}
+                    canManageTask={canManageTask}
+                    canSubmitTask={canSubmitTask}
+                    isAdmin={isAdmin}
+                    onOpenSubmissions={openSubmissions}
+                  />
                 ))}
               </div>
 
@@ -528,7 +771,7 @@ export default function TasksPage() {
                 required
               >
                 <option value="">Select project</option>
-                {projects.map((p) => (
+                {manageableProjects.map((p) => (
                   <option key={p._id} value={p._id}>{p.name}</option>
                 ))}
               </select>
@@ -552,6 +795,9 @@ export default function TasksPage() {
             <label className="text-[#6B7068] text-sm block mb-2 font-medium flex items-center gap-1.5">
               <HiOutlineUserAdd className="w-4 h-4" /> Assign To
             </label>
+            <p className="text-[#969A92] text-xs mb-2">
+              Assigning a teammate gives them access to this project and its tasks.
+            </p>
 
             {!formData.projectId ? (
               <div className="bg-[#F8F9F5] border border-dashed border-[#E5E7E0] rounded-xl p-3 text-center">
@@ -615,7 +861,7 @@ export default function TasksPage() {
                         </div>
                         <span>{user.name}</span>
                         {notInProject && (
-                          <span className="text-[9px] bg-orange-100 text-orange-600 px-1 py-0.5 rounded">No project access</span>
+                          <span className="text-[9px] bg-orange-100 text-orange-600 px-1 py-0.5 rounded">Will get project access</span>
                         )}
                         <HiOutlinePlus className="w-3 h-3 text-[#C4F13B]" />
                       </button>
@@ -623,37 +869,6 @@ export default function TasksPage() {
                   })}
                 </div>
 
-                {/* Grant workstation access for assignees not in project */}
-                {selectedAssignees.filter((a) => {
-                  return !projectMembers.some((pm) => {
-                    const pmId = pm._id || pm.userId?._id || pm.userId;
-                    return pmId === a._id;
-                  });
-                }).length > 0 && (
-                  <div className="mt-2 space-y-1.5">
-                    <p className="text-[#6B7068] text-xs font-medium flex items-center gap-1.5">
-                      <HiOutlineShieldCheck className="w-3.5 h-3.5 text-orange-500" />
-                      Grant project access to:
-                    </p>
-                    {selectedAssignees
-                      .filter((a) => !projectMembers.some((pm) => {
-                        const pmId = pm._id || pm.userId?._id || pm.userId;
-                        return pmId === a._id;
-                      }))
-                      .map((a) => (
-                        <label key={a._id} className="flex items-center gap-2 p-2 bg-orange-50 border border-orange-200/70 rounded-lg cursor-pointer hover:bg-orange-100 transition-all">
-                          <input
-                            type="checkbox"
-                            checked={!!grantAccess[a._id]}
-                            onChange={(e) => setGrantAccess((g) => ({ ...g, [a._id]: e.target.checked }))}
-                            className="w-3.5 h-3.5 accent-[#C4F13B]"
-                          />
-                          <span className="text-xs font-medium text-[#171820]">{a.name}</span>
-                          <span className="text-[10px] text-orange-600 ml-auto">will be added to this project</span>
-                        </label>
-                      ))}
-                  </div>
-                )}
               </div>
             )}
           </div>
@@ -684,6 +899,12 @@ export default function TasksPage() {
             </div>
           </div>
 
+          {formError && (
+            <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">
+              {formError}
+            </p>
+          )}
+
           <div className="flex gap-3 pt-2">
             <button
               type="button"
@@ -703,6 +924,189 @@ export default function TasksPage() {
             </motion.button>
           </div>
         </form>
+      </Modal>
+
+      <Modal
+        isOpen={!!submissionTask}
+        onClose={() => setSubmissionTask(null)}
+        title={submissionTask ? `Task work — ${submissionTask.title}` : 'Task work'}
+        size="lg"
+      >
+        {submissionTask && (
+          <div className="space-y-5">
+            <div className="rounded-xl border border-[#E5E7E0] bg-[#F8F9F5] p-3">
+              <p className="text-xs text-[#6B7068]">
+                Project: <span className="font-semibold text-[#171820]">{submissionTask.projectId?.name || 'Project task'}</span>
+              </p>
+              {submissionTask.description && <p className="mt-2 whitespace-pre-wrap text-sm text-[#6B7068]">{submissionTask.description}</p>}
+            </div>
+
+            <section className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-[#171820]">Submissions and review</h3>
+                {submissionsLoading && <span className="text-xs text-[#969A92]">Loading…</span>}
+              </div>
+
+              {!submissionsLoading && submissions.length === 0 && (
+                <p className="rounded-xl border border-dashed border-[#E5E7E0] p-4 text-center text-sm text-[#969A92]">
+                  No work has been submitted for this task yet.
+                </p>
+              )}
+
+              {submissions.map((submission) => {
+                const isPending = submission.status === 'submitted';
+                const canReviewSubmission = isAdmin && isPending
+                  && String(submission.submittedBy?._id || submission.submittedBy) !== String(user?._id);
+                const statusStyle = submission.status === 'approved'
+                  ? 'bg-[#EDFCF3] text-[#287D48]'
+                  : submission.status === 'changes_requested'
+                    ? 'bg-[#FFF8EF] text-[#A96612]'
+                    : 'bg-[#EFF5FF] text-[#3478B9]';
+
+                return (
+                  <article key={submission._id} className="space-y-3 rounded-xl border border-[#E5E7E0] bg-white p-4">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div>
+                        <p className="text-sm font-semibold text-[#171820]">{submission.submittedBy?.name || 'Task member'}</p>
+                        <p className="text-xs text-[#969A92]">Submitted {new Date(submission.createdAt).toLocaleString()}</p>
+                      </div>
+                      <span className={`rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase ${statusStyle}`}>
+                        {submission.status.replace('_', ' ')}
+                      </span>
+                    </div>
+
+                    {submission.note && <p className="whitespace-pre-wrap text-sm text-[#6B7068]">{submission.note}</p>}
+
+                    {submission.files?.length > 0 && (
+                      <div className="space-y-1.5 border-t border-[#F1F3ED] pt-3">
+                        {submission.files.map((file) => (
+                          <div key={file._id} className="flex items-center gap-2 rounded-lg bg-[#F8F9F5] px-2.5 py-2">
+                            <HiOutlineFolder className="h-4 w-4 shrink-0 text-[#969A92]" />
+                            <span className="min-w-0 flex-1 break-all text-xs text-[#171820]">{file.relativePath}</span>
+                            <span className="shrink-0 text-[10px] text-[#969A92]">{formatFileSize(file.size)}</span>
+                            <button
+                              type="button"
+                              onClick={() => downloadSubmissionFile(submission._id, file)}
+                              className="shrink-0 rounded-md p-1 text-[#6B7068] hover:bg-white hover:text-[#171820]"
+                              aria-label={`Download ${file.name}`}
+                            >
+                              <HiOutlineDownload className="h-4 w-4" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {submission.reviewComment && (
+                      <div className="rounded-lg bg-[#F8F9F5] p-3 text-xs text-[#6B7068]">
+                        <span className="font-semibold text-[#171820]">Admin feedback:</span> {submission.reviewComment}
+                        {submission.reviewedBy?.name && <span className="block mt-1 text-[#969A92]">Reviewed by {submission.reviewedBy.name}</span>}
+                      </div>
+                    )}
+
+                    {canReviewSubmission && (
+                      <div className="space-y-2 border-t border-[#F1F3ED] pt-3">
+                        <label className="block text-xs font-medium text-[#6B7068]" htmlFor={`review-comment-${submission._id}`}>
+                          Feedback for the assignee
+                        </label>
+                        <textarea
+                          id={`review-comment-${submission._id}`}
+                          value={reviewComments[submission._id] || ''}
+                          onChange={(event) => setReviewComments((current) => ({ ...current, [submission._id]: event.target.value }))}
+                          className="input-field min-h-[70px] resize-y"
+                          placeholder="Required when requesting changes"
+                          rows={2}
+                        />
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() => reviewSubmission(submission, 'request_changes')}
+                            disabled={reviewingSubmissionId === submission._id || !(reviewComments[submission._id] || '').trim()}
+                            className="btn-secondary justify-center disabled:opacity-50"
+                          >
+                            Request Changes
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => reviewSubmission(submission, 'approve')}
+                            disabled={reviewingSubmissionId === submission._id}
+                            className="btn-primary justify-center disabled:opacity-50"
+                          >
+                            <HiOutlineCheck className="h-4 w-4" /> Approve and Complete Task
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    {isAdmin && isPending && !canReviewSubmission && (
+                      <p className="rounded-lg bg-[#F8F9F5] px-3 py-2 text-xs text-[#6B7068]">
+                        Another workspace admin must review your own submission.
+                      </p>
+                    )}
+                  </article>
+                );
+              })}
+            </section>
+
+            {canSubmitTask(submissionTask) && submissionTask.status !== 'done' && !hasPendingSubmission && (
+              <form onSubmit={submitWork} className="space-y-3 border-t border-[#E5E7E0] pt-4">
+                <div>
+                  <h3 className="text-sm font-semibold text-[#171820]">Submit your work</h3>
+                  <p className="mt-1 text-xs text-[#969A92]">
+                    Add files or a folder. Your admin will review the submission before the task is completed. Each file can be up to 5 MB; the submission limit is 8 MB total.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  <label className="btn-secondary relative cursor-pointer justify-center">
+                    <HiOutlineUpload className="h-4 w-4" /> Add files
+                    <input type="file" multiple className="absolute inset-0 cursor-pointer opacity-0" onChange={handleSubmissionFiles} />
+                  </label>
+                  <label className="btn-secondary relative cursor-pointer justify-center">
+                    <HiOutlineFolder className="h-4 w-4" /> Add folder
+                    <input type="file" multiple webkitdirectory="" directory="" className="absolute inset-0 cursor-pointer opacity-0" onChange={handleSubmissionFiles} />
+                  </label>
+                </div>
+
+                {submissionFiles.length > 0 && (
+                  <div className="max-h-36 space-y-1 overflow-y-auto rounded-lg border border-[#E5E7E0] p-2">
+                    {submissionFiles.map((file) => (
+                      <div key={`${file.webkitRelativePath || file.name}:${file.lastModified}`} className="flex justify-between gap-3 text-xs text-[#6B7068]">
+                        <span className="break-all">{file.webkitRelativePath || file.name}</span>
+                        <span className="shrink-0">{formatFileSize(file.size)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <textarea
+                  value={submissionNote}
+                  onChange={(event) => setSubmissionNote(event.target.value)}
+                  className="input-field min-h-[75px] resize-y"
+                  placeholder="Add a note for the admin (optional)"
+                  maxLength={2000}
+                  rows={2}
+                />
+
+                <button
+                  type="submit"
+                  disabled={submissionSaving || submissionFiles.length === 0}
+                  className="btn-primary justify-center disabled:opacity-50"
+                >
+                  <HiOutlineUpload className="h-4 w-4" />
+                  {submissionSaving ? 'Submitting…' : 'Submit for Approval'}
+                </button>
+              </form>
+            )}
+
+            {hasPendingSubmission && canSubmitTask(submissionTask) && (
+              <p className="flex items-center gap-2 rounded-lg bg-[#EFF5FF] px-3 py-2 text-xs text-[#3478B9]">
+                <HiOutlineClock className="h-4 w-4" /> Your work is waiting for admin review.
+              </p>
+            )}
+
+            {submissionError && <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">{submissionError}</p>}
+          </div>
+        )}
       </Modal>
     </div>
   );

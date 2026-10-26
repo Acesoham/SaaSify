@@ -111,16 +111,19 @@ export const useAuthStore = create((set, get) => ({
       
       const user = userRes.data.data.user;
       const tenants = tenantsRes.data.data;
-      const firstTenant = tenants[0]?.tenant || null;
+      const savedTenant = JSON.parse(localStorage.getItem('saasify_current_tenant') || 'null');
+      const selectedTenant = tenants.find(
+        (entry) => String(entry.tenant?._id) === String(savedTenant?._id)
+      )?.tenant || tenants[0]?.tenant || null;
 
       localStorage.setItem('saasify_user', JSON.stringify(user));
       localStorage.setItem('saasify_tenants', JSON.stringify(tenants));
-      localStorage.setItem('saasify_current_tenant', JSON.stringify(firstTenant));
+      localStorage.setItem('saasify_current_tenant', JSON.stringify(selectedTenant));
 
       set({
         user,
         tenants,
-        currentTenant: firstTenant,
+        currentTenant: selectedTenant,
         isLoading: false,
       });
       return true;

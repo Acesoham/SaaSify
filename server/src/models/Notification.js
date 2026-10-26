@@ -25,6 +25,7 @@ const notificationSchema = new mongoose.Schema(
       role: { type: String },
       taskId: { type: mongoose.Schema.Types.ObjectId, ref: 'Task' },
       projectId: { type: mongoose.Schema.Types.ObjectId, ref: 'Project' },
+      submissionId: { type: mongoose.Schema.Types.ObjectId, ref: 'TaskSubmission' },
     },
   },
   { timestamps: true }

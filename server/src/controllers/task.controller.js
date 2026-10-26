@@ -1,10 +1,30 @@
 import { taskService } from '../services/task.service.js';
 import ActivityLog from '../models/ActivityLog.js';
+import Notification from '../models/Notification.js';
+
+function notifyTaskAssignees(task, actorId, tenantId) {
+  const assigneeIds = [...new Set((task.assignees || [])
+    .map((assignee) => String(assignee._id || assignee))
+    .filter((assigneeId) => assigneeId !== String(actorId)))];
+  const projectName = task.projectId?.name || 'a project';
+
+  return Promise.all(assigneeIds.map((userId) => Notification.create({
+    userId,
+    type: 'task_assigned',
+    title: `New task assigned: ${task.title}`,
+    message: `You were assigned a task in ${projectName}. Open Tasks to view and complete it.`,
+    meta: {
+      tenantId,
+      projectId: task.projectId?._id || task.projectId,
+      taskId: task._id,
+    },
+  }).catch((error) => console.error('[Task notification] Could not notify assignee:', error.message))));
+}
 
 export const taskController = {
   async getAll(req, res, next) {
     try {
-      const result = await taskService.getAll(req.tenantId, req.query);
+      const result = await taskService.getAll(req.tenantId, req.query, req.userId, req.userRole);
       res.json({ success: true, data: result });
     } catch (error) {
       next(error);
@@ -13,7 +33,7 @@ export const taskController = {
 
   async getById(req, res, next) {
     try {
-      const task = await taskService.getById(req.params.id, req.tenantId);
+      const task = await taskService.getById(req.params.id, req.tenantId, req.userId, req.userRole);
       res.json({ success: true, data: task });
     } catch (error) {
       next(error);
@@ -22,7 +42,8 @@ export const taskController = {
 
   async create(req, res, next) {
     try {
-      const task = await taskService.create(req.validatedBody, req.tenantId, req.userId);
+      const task = await taskService.create(req.validatedBody, req.tenantId, req.userId, req.userRole);
+      await notifyTaskAssignees(task, req.userId, req.tenantId);
 
       await ActivityLog.create({
         tenantId: req.tenantId,
@@ -35,7 +56,7 @@ export const taskController = {
 
       // Emit socket event
       if (req.app.get('io')) {
-        req.app.get('io').to(`tenant:${req.tenantId}`).emit('task:created', task);
+        req.app.get('io').to(`project:${task.projectId?._id || task.projectId}`).emit('task:created', task);
       }
 
       res.status(201).json({ success: true, data: task });
@@ -46,8 +67,17 @@ export const taskController = {
 
   async update(req, res, next) {
     try {
-      const oldTask = await taskService.getById(req.params.id, req.tenantId);
-      const task = await taskService.update(req.params.id, req.validatedBody, req.tenantId);
+      const oldTask = await taskService.getById(req.params.id, req.tenantId, req.userId, req.userRole);
+      const task = await taskService.update(req.params.id, req.validatedBody, req.tenantId, req.userId, req.userRole);
+
+      const previouslyAssigned = new Set((oldTask.assignees || [])
+        .map((assignee) => String(assignee._id || assignee)));
+      const newlyAssigned = task.assignees?.filter((assignee) =>
+        !previouslyAssigned.has(String(assignee._id || assignee))
+      ) || [];
+      if (newlyAssigned.length > 0) {
+        await notifyTaskAssignees({ ...task.toObject(), assignees: newlyAssigned }, req.userId, req.tenantId);
+      }
 
       const action = req.validatedBody.status && req.validatedBody.status !== oldTask.status
         ? 'task.status_changed'
@@ -69,7 +99,7 @@ export const taskController = {
       });
 
       if (req.app.get('io')) {
-        req.app.get('io').to(`tenant:${req.tenantId}`).emit('task:updated', task);
+        req.app.get('io').to(`project:${task.projectId?._id || task.projectId}`).emit('task:updated', task);
       }
 
       res.json({ success: true, data: task });
@@ -80,7 +110,7 @@ export const taskController = {
 
   async remove(req, res, next) {
     try {
-      const task = await taskService.remove(req.params.id, req.tenantId);
+      const task = await taskService.remove(req.params.id, req.tenantId, req.userId, req.userRole);
 
       await ActivityLog.create({
         tenantId: req.tenantId,
@@ -92,7 +122,7 @@ export const taskController = {
       });
 
       if (req.app.get('io')) {
-        req.app.get('io').to(`tenant:${req.tenantId}`).emit('task:deleted', { taskId: req.params.id });
+        req.app.get('io').to(`project:${task.projectId}`).emit('task:deleted', { taskId: req.params.id });
       }
 
       res.json({ success: true, message: 'Task deleted' });
@@ -103,7 +133,7 @@ export const taskController = {
 
   async getKanban(req, res, next) {
     try {
-      const columns = await taskService.getKanbanBoard(req.tenantId, req.query.projectId);
+      const columns = await taskService.getKanbanBoard(req.tenantId, req.query.projectId, req.userId, req.userRole);
       res.json({ success: true, data: columns });
     } catch (error) {
       next(error);
@@ -112,11 +142,13 @@ export const taskController = {
 
   async addComment(req, res, next) {
     try {
+      const task = await taskService.getById(req.params.id, req.tenantId, req.userId, req.userRole);
       const comment = await taskService.addComment(
         req.params.id,
         req.tenantId,
         req.userId,
-        req.validatedBody.content
+        req.validatedBody.content,
+        req.userRole
       );
 
       await ActivityLog.create({
@@ -129,7 +161,7 @@ export const taskController = {
       });
 
       if (req.app.get('io')) {
-        req.app.get('io').to(`tenant:${req.tenantId}`).emit('task:commented', {
+        req.app.get('io').to(`project:${task.projectId?._id || task.projectId}`).emit('task:commented', {
           taskId: req.params.id,
           comment,
         });
@@ -143,7 +175,7 @@ export const taskController = {
 
   async getComments(req, res, next) {
     try {
-      const comments = await taskService.getComments(req.params.id, req.tenantId);
+      const comments = await taskService.getComments(req.params.id, req.tenantId, req.userId, req.userRole);
       res.json({ success: true, data: comments });
     } catch (error) {
       next(error);

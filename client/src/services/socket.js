@@ -48,12 +48,12 @@ class SocketService {
     }
   }
 
-  joinTenant(tenantId) {
-    this.emit('join:tenant', tenantId);
+  joinProject(projectId) {
+    this.emit('join:project', projectId);
   }
 
-  leaveTenant(tenantId) {
-    this.emit('leave:tenant', tenantId);
+  leaveProject(projectId) {
+    this.emit('leave:project', projectId);
   }
 }
 
